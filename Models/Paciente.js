@@ -11,8 +11,8 @@ class Paciente extends Model{
             relation: Model.BelongsToOneRelation,
             modelClass:Usuario,
             join:{
-                from:"paciente.id_usuario",
-                to:"usuario.id"
+                from:"pacientes.id_usuario",
+                to:"usuarios.id"
             }
         }
     }

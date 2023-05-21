@@ -12,21 +12,26 @@ class Usuario extends Model {
       relation: Model.HasOneRelation,
       modelClass: Paciente,
       join: {
-        from: "usuario.id",
-        to: "paciente.id_usuario",
+        from: "usuarios.id",
+        to: "pacientes.id_usuario",
       },
     },
     terapeuta: {
       relation: Model.HasOneRelation,
       modelClass: Terapeuta,
       join: {
-        from: "usuario.id",
-        to: "terapeuta.id_usuario",
+        from: "usuarios.id",
+        to: "terapeutas.id_usuario",
       },
     },
   };
-  crearUsuario = async (usuario) => {
+  static crearUsuarioBaseDatos = async (usuario) => {
     let newUsuario = await Usuario.query().insertGraphAndFetch(usuario);
+    return newUsuario;
+  };
+  static crearUsuarioFirebase = async (usuario) => {
+    let newUsuario = await Usuario.query().insertGraphAndFetch(usuario);
+    
     return newUsuario;
   };
 }
