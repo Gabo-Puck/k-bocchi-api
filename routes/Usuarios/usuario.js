@@ -22,11 +22,11 @@ router.post("/datos/log", async (req, res, next) => {
       .json("Usuario no encontrado en nuestra base de datos");
   }
   if (usuario.email && !usuario.contrasena) {
-    return res.status(500).json("Usuario registrado con google");
+    return res.status(451).json("Usuario registrado con google");
   }
   let contrasena = desencriptar(usuario.contrasena);
   if (usuario.email && contrasena != req.body.contrasena)
-    return res.status(500).json("Contraseña incorrecta");
+    return res.status(452).json("Contraseña incorrecta");
   return res.json(usuario);
 });
 

@@ -7,6 +7,16 @@ const knex = require("knex")({
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_KBOCCHI,
   },
+  pool:{
+    "min": 2,
+    "max": 6,
+    "createTimeoutMillis": 3000,
+    "acquireTimeoutMillis": 30000,
+    "idleTimeoutMillis": 30000,
+    "reapIntervalMillis": 1000,
+    "createRetryIntervalMillis": 100,
+    "propagateCreateError": false // <- default is true, set to false
+  }
 });
 
 
