@@ -5,7 +5,7 @@ const { encriptar, desencriptar } = require("../utils/encryption");
 const { getAuth } = require("firebase-admin/auth");
 const swaggerUI = require("swagger-ui-express");
 const swaggerJSDOC = require("swagger-jsdoc");
-const { path } = require("../app");
+const  path = require("path");
 
 /* GET home page. */
 // router.get("/", function (req, res, next) {
