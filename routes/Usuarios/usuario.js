@@ -1,11 +1,12 @@
 const express = require("express");
-const Usuario = require("../../Models/Usuario");
+var Usuario = require("../../Models/Usuario");
 const { v4: uuidv4, v4 } = require("uuid");
 const { encriptar, desencriptar } = require("../../utils/encryption");
 var router = express.Router();
+var terapeutas = require("./Terapeutas/terapeuta");
 
 router.get("/datos/:uid", async (req, res, next) => {
-  console.log(req.body)
+  console.log(req.body);
   let usuario = await Usuario.query().findById(req.params.uid);
   if (!usuario) {
     return res
@@ -54,5 +55,7 @@ router.post("/registrar", async (req, res, next) => {
       .send(`<p>Ha ocurrido un error:</p> \n <code>${error}</code>`);
   }
 });
+
+router.use("/fisioterapeutas",terapeutas)
 
 module.exports = router;
