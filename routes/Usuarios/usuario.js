@@ -5,6 +5,7 @@ const { encriptar, desencriptar } = require("../../utils/encryption");
 var router = express.Router();
 
 router.get("/datos/:uid", async (req, res, next) => {
+  console.log(req.body)
   let usuario = await Usuario.query().findById(req.params.uid);
   if (!usuario) {
     return res
