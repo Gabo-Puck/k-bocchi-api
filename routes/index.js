@@ -5,11 +5,27 @@ const { encriptar, desencriptar } = require("../utils/encryption");
 const { getAuth } = require("firebase-admin/auth");
 const swaggerUI = require("swagger-ui-express");
 const swaggerJSDOC = require("swagger-jsdoc");
+const { path } = require("../app");
 
 /* GET home page. */
 // router.get("/", function (req, res, next) {
 //   res.render("index", { title: "Express" });
 // });
+
+const swaggerSpec = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "K-Bocchi API",
+      description:
+        "API para interactuar con la base de datos y sistemas relacionados",
+      version: "1.0.0",
+    },
+  },
+  apis: [
+    `${path.join(__dirname, "./routes/*.js")}`,
+  ],
+};
 
 router.get("/", swaggerUI.serve, swaggerUI.setup(swaggerJSDOC(swaggerSpec)));
 
