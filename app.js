@@ -7,14 +7,27 @@ var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 var cors = require("cors");
 var indexRouter = require("./routes/index");
-var usuario = require("./routes/Usuarios/usuario");
-
+var usuario = require("./routes/usuario");
 var { knex } = require("./setup/knexfile");
 
 var { Model } = require("objection");
 Model.knex(knex);
-const swaggerUi = require("swagger-ui-express");
-const swaggerDocument = require("./swagger.json");
+const swaggerUI = require("swagger-ui-express");
+const swaggerJSDOC = require("swagger-jsdoc");
+const swaggerSpec = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "K-Bocchi API",
+      description:
+        "API para interactuar con la base de datos y sistemas relacionados",
+      version: "1.0.0",
+    },
+  },
+  apis: [
+    `${path.join(__dirname, "./routes/*.js")}`,
+  ],
+};
 var app = express();
 
 const admin = require("firebase-admin");
@@ -35,9 +48,9 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
 app.use(
-  '/api-docs',
-  swaggerUi.serve, 
-  swaggerUi.setup(swaggerDocument)
+  "/api-docs",
+  swaggerUI.serve,
+  swaggerUI.setup(swaggerJSDOC(swaggerSpec))
 );
 app.use("/", indexRouter);
 app.use("/usuarios", usuario);

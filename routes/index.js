@@ -4,32 +4,79 @@ var { Usuario } = require("../Models/Usuario");
 const {encriptar,desencriptar} = require("../utils/encryption")
 const { getAuth } = require("firebase-admin/auth");
 
+
+
 /* GET home page. */
 router.get("/", function (req, res, next) {
   res.render("index", { title: "Express" });
 });
 
-router.get("/usuarios", (req, res, next) => {
-  console.log("x");
-  Usuario.query().then((usuarios) => res.json(usuarios));
-});
 
-router.get("/gabo", (req, res, next) => {
-  console.log(req.query.uid);
-  getAuth()
-    .getUser(req.query.uid)
-    .then((record) => res.json(record));
-});
-
+/**
+ * @swagger
+ * /encriptar:
+ *  post:
+ *    summary: Ruta que permite encriptar un dato
+ *    tags: [Utilidades]
+ *    responses:
+ *      200:
+ *        description: Devuelve el mensaje en cuestion encriptado
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *    requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *            properties:
+ *              data: 
+ *                type: string
+ */
 router.post("/encriptar",(req,res,next)=>{
   let {data} = req.body;
   let enc = encriptar(data);
   res.json(enc);
 })
+/**
+ * @swagger
+ * /desencriptar:
+ *  post:
+ *    summary: Ruta que permite encriptar un dato
+ *    tags: [Utilidades]
+ *    responses:
+ *      200:
+ *        description: Devuelve el mensaje en cuestion desencriptado
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      400:
+ *        description: Devuelve un mensaje de error indicando que no esta encriptado "data"
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *    requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *            properties:
+ *              data:
+ *                type: string
+ */
 router.post("/desencriptar",(req,res,next)=>{
   let {data} = req.body;
-  let desencriptado = desencriptar(data);
-  res.json(desencriptado);
+  try{
+    let desencriptado = desencriptar(data);
+    res.status(200).json(desencriptado);
+  }catch(error){
+    res.status(400).json("Error: Dato no encriptado")
+  }
   
 })
 
