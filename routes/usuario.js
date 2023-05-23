@@ -77,6 +77,7 @@ router.get("/datos/:uid", async (req, res, next) => {
  * /usuarios/datos/log:
  *  post:
  *    summary: Permite validar las credenciales de un usuario
+ *    description: Es necesario pasar el valor 'contrasena', aunque el usuario se haya identificado con google. Se puede poner vacio ("")
  *    tags: [Usuario]
  *    responses:
  *      "200":

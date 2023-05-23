@@ -8,10 +8,13 @@ var logger = require("morgan");
 var cors = require("cors");
 var indexRouter = require("./routes/index");
 var usuario = require("./routes/usuario");
+var utilidadesRouter = require("./routes/utilidades");
 var { knex } = require("./setup/knexfile");
 
 var { Model } = require("objection");
 Model.knex(knex);
+const swaggerUI = require("swagger-ui-express");
+const swaggerJSDOC = require("swagger-jsdoc");
 const swaggerSpec = {
   definition: {
     openapi: "3.0.0",
@@ -45,8 +48,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
-app.use("/", indexRouter);
+app.use("/utilidades", utilidadesRouter);
 app.use("/usuarios", usuario);
+app.use(
+  "/",
+  swaggerUI.serve,
+  swaggerUI.setup(swaggerJSDOC(swaggerSpec))
+);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
