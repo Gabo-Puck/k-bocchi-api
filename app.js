@@ -12,8 +12,6 @@ var { knex } = require("./setup/knexfile");
 
 var { Model } = require("objection");
 Model.knex(knex);
-const swaggerUI = require("swagger-ui-express");
-const swaggerJSDOC = require("swagger-jsdoc");
 const swaggerSpec = {
   definition: {
     openapi: "3.0.0",
@@ -47,11 +45,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
-app.use(
-  "/api-docs",
-  swaggerUI.serve,
-  swaggerUI.setup(swaggerJSDOC(swaggerSpec))
-);
 app.use("/", indexRouter);
 app.use("/usuarios", usuario);
 

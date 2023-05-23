@@ -1,16 +1,17 @@
 var express = require("express");
 var router = express.Router();
 var { Usuario } = require("../Models/Usuario");
-const {encriptar,desencriptar} = require("../utils/encryption")
+const { encriptar, desencriptar } = require("../utils/encryption");
 const { getAuth } = require("firebase-admin/auth");
-
-
+const swaggerUI = require("swagger-ui-express");
+const swaggerJSDOC = require("swagger-jsdoc");
 
 /* GET home page. */
-router.get("/", function (req, res, next) {
-  res.render("index", { title: "Express" });
-});
+// router.get("/", function (req, res, next) {
+//   res.render("index", { title: "Express" });
+// });
 
+router.get("/", swaggerUI.serve, swaggerUI.setup(swaggerJSDOC(swaggerSpec)));
 
 /**
  * @swagger
@@ -32,14 +33,14 @@ router.get("/", function (req, res, next) {
  *          schema:
  *            type: object
  *            properties:
- *              data: 
+ *              data:
  *                type: string
  */
-router.post("/encriptar",(req,res,next)=>{
-  let {data} = req.body;
+router.post("/encriptar", (req, res, next) => {
+  let { data } = req.body;
   let enc = encriptar(data);
   res.json(enc);
-})
+});
 /**
  * @swagger
  * /desencriptar:
@@ -69,15 +70,14 @@ router.post("/encriptar",(req,res,next)=>{
  *              data:
  *                type: string
  */
-router.post("/desencriptar",(req,res,next)=>{
-  let {data} = req.body;
-  try{
+router.post("/desencriptar", (req, res, next) => {
+  let { data } = req.body;
+  try {
     let desencriptado = desencriptar(data);
     res.status(200).json(desencriptado);
-  }catch(error){
-    res.status(400).json("Error: Dato no encriptado")
+  } catch (error) {
+    res.status(400).json("Error: Dato no encriptado");
   }
-  
-})
+});
 
 module.exports = router;
