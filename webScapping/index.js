@@ -17,6 +17,9 @@ async function scrapCedula(numero_cedula) {
         .click()
     );
     await page.type("#idCedula", `${numero_cedula}`);
+    await page.evaluate(() =>
+      document.querySelector("#dijit_form_Button_1_label").click()
+    );
   } catch (err) {
     let response = {
       error: "Hemos fallado al intentar validar tu cedula, intenta más tarde",
@@ -27,11 +30,8 @@ async function scrapCedula(numero_cedula) {
   }
   //3339300
   //3339201
-  await page.evaluate(() =>
-    document.querySelector("#dijit_form_Button_1_label").click()
-  );
   try {
-    await page.waitForSelector("#custom_MyDialog_0", { timeout: 8000 });
+    await page.waitForSelector("#custom_MyDialog_0", { timeout: 5000 });
     console.log("No se encontro nada");
     let response = {
       mensaje: "No se encontro la cedula",
