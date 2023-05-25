@@ -3,19 +3,28 @@ const fs = require("fs/promises");
 async function scrapCedula(numero_cedula) {
   const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
-  await page.goto(
-    "https://www.cedulaprofesional.sep.gob.mx/cedula/presidencia/indexAvanzada.action",
-    { timeout: 90000 }
-  );
+  try {
+    await page.goto(
+      "https://www.cedulaprofesional.sep.gob.mx/cedula/presidencia/indexAvanzada.action",
+      { timeout: 180000 }
+    );
 
-  await page.evaluate(() =>
-    document
-      .querySelector(
-        "#subenlaces > ul > li:nth-child(2) > ul > li:nth-child(2) > a"
-      )
-      .click()
-  );
-  await page.type("#idCedula", `${numero_cedula}`);
+    await page.evaluate(() =>
+      document
+        .querySelector(
+          "#subenlaces > ul > li:nth-child(2) > ul > li:nth-child(2) > a"
+        )
+        .click()
+    );
+    await page.type("#idCedula", `${numero_cedula}`);
+  } catch (err) {
+    let response = {
+      error: "Hemos fallado al intentar validar tu cedula, intenta más tarde",
+    };
+    page.close();
+    browser.close();
+    return response;
+  }
   //3339300
   //3339201
   await page.evaluate(() =>

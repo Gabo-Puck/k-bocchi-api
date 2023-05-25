@@ -109,6 +109,8 @@ router.post("/desencriptar", (req, res, next) => {
  *          application/json:
  *            schema:
  *              type: string
+ *      500:
+ *        description: Devuelve un mensaje indicando que algo ha fallado en el servidor (Como no poder conectarse a https://www.cedulaprofesional.sep.gob.mx/cedula/presidencia/indexAvanzada.action)
  *    requestBody:
  *      required: true
  *      content:
@@ -130,6 +132,7 @@ router.post("/validarCedula", async (req, res, next) => {
       .status(400)
       .json("La cedula tiene que tener entre 7 u 8 caracteres");
   let scrapResult = await scrapCedula(cedula);
+  if (scrapResult.error) return res.status(500).json(scrapResult.error);
   if (scrapResult.mensaje) {
     return res.status(404).json(scrapResult.mensaje);
   }
