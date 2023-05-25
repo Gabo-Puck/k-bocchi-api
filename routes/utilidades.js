@@ -130,7 +130,7 @@ router.post("/validarCedula", async (req, res, next) => {
       .json("La cedula tiene que tener entre 7 u 8 caracteres");
   let scrapResult = await scrapCedula(cedula);
   if (scrapResult.mensaje) {
-    return res.status(404).json(scrapResult);
+    return res.status(404).json(scrapResult.mensaje);
   }
   return res.status(200).json(scrapResult);
 });

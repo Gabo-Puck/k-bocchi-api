@@ -1,5 +1,5 @@
 const {join} = require('path');
-
+//ESTE ARCHIVO TIENE QUE IR EN LA RAIZ
 /**
  * @type {import("puppeteer").Configuration}
  */
