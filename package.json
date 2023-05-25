@@ -7,6 +7,7 @@
     "watch": "SET DEBUG=k-bocchi-api:* & nodemon ./bin/www"
   },
   "dependencies": {
+    "@google-cloud/vision": "^3.1.3",
     "axios": "^1.4.0",
     "cheerio": "^1.0.0-rc.12",
     "cookie-parser": "~1.4.4",
@@ -15,6 +16,7 @@
     "dotenv": "^16.0.3",
     "ejs": "~2.6.1",
     "express": "~4.16.1",
+    "express-fileupload": "^1.4.0",
     "express-validator": "^7.0.1",
     "firebase-admin": "^11.8.0",
     "http-errors": "~1.6.3",

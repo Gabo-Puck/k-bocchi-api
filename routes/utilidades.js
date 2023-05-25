@@ -4,6 +4,7 @@ var { Usuario } = require("../Models/Usuario");
 const { encriptar, desencriptar } = require("../utils/encryption");
 const { getAuth } = require("firebase-admin/auth");
 const { scrapCedula } = require("../webScapping");
+const { validarCedulaOCR } = require("../testVision/cloudVision");
 
 /**
  * @swagger
@@ -133,6 +134,79 @@ router.post("/validarCedula", async (req, res, next) => {
     return res.status(404).json(scrapResult.mensaje);
   }
   return res.status(200).json(scrapResult);
+});
+
+/**
+ * @swagger
+ * /utilidades/validarCedulaOCR:
+ *  post:
+ *    summary: Ruta que permite validar una fotografía de una cedula
+ *    consumes:
+ *      - multipart/form-data
+ *    requestBody:
+ *      content:
+ *        multipart/form-data:
+ *          schema:
+ *            type: object
+ *            properties:
+ *              nombre:
+ *                type: string
+ *              numeroCedula:
+ *                type: string
+ *              imagenCedula:
+ *                type: string
+ *                format: binary
+ *    tags: [Utilidades]
+ *    responses:
+ *      200:
+ *        description: Devuelve un mensaje de cedula valida
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      400:
+ *        description: Devuelve un mensaje indicando que alguno de los campos no se encuentra en la petición/request
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      500:
+ *        description: Devuelve un mensaje de error del servidor
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      422:
+ *        description: Devuelve un mensaje de error indicando que alguno de los datos no coincide con los obtenidos de la fotografía
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ */
+router.post("/validarCedulaOCR", async (req, res, next) => {
+  let imagenCedula;
+  console.log(req.body);
+  if (!req.files || Object.keys(req.files).length === 0) {
+    return res.status(400).send("No se subió ninguna imagen");
+  }
+  if (!req.body.nombre)
+    return res.status(400).json("El nombre completo es obligatorio");
+  if (!req.body.numeroCedula)
+    return res.status(400).json("El numero de la cedula es obligatorio");
+  let nombre = req.body.nombre;
+  let cedula = req.body.numeroCedula;
+  let buffer = req.files.imagenCedula;
+  try {
+    let result = await validarCedulaOCR(nombre, cedula, buffer.data);
+    if (result.isValida)
+      return res
+        .status(200)
+        .json("La información provista concuerda con la cedula de la imagen");
+    return res.status(422).json(result.mensaje);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal, intenta más tarde");
+  }
 });
 
 module.exports = router;
