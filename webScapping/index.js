@@ -1,9 +1,11 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs/promises");
 async function scrapCedula(numero_cedula) {
-  const browser = await puppeteer.launch({ headless: true });
-  const page = await browser.newPage();
+  let browser;
+  let page;
   try {
+    browser = await puppeteer.launch({ headless: true });
+    page = await browser.newPage();
     await page.goto(
       "https://www.cedulaprofesional.sep.gob.mx/cedula/presidencia/indexAvanzada.action",
       { timeout: 180000 }
