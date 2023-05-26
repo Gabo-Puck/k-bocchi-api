@@ -26,8 +26,9 @@ async function scrapCedula(numero_cedula) {
     let response = {
       error: "Hemos fallado al intentar validar tu cedula, intenta más tarde",
     };
-    page.close();
-    browser.close();
+    console.log(err);
+    if (page) page.close();
+    if (browser) browser.close();
     return response;
   }
   //3339300
