@@ -35,6 +35,7 @@ const admin = require("firebase-admin");
 const serviceAccount = require("./kbocchi-1254b-firebase-adminsdk-9ltt9-16cf6fa56d.json");
 const { validateCedula } = require("./testVision/cloudVision");
 
+
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
@@ -52,7 +53,7 @@ app.use(cors());
 app.use("/utilidades", utilidadesRouter);
 app.use("/usuarios", usuario);
 app.use("/docs", swaggerUI.serve, swaggerUI.setup(swaggerJSDOC(swaggerSpec)));
-
+app.use("/", indexRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

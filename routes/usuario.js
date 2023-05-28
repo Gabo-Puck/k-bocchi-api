@@ -109,6 +109,12 @@ router.get("/datos/:uid", async (req, res, next) => {
  *         application/json:
  *           schema:
  *             type: string
+ *      "403":
+ *        description: Devuelve un mensaje para indicar que la cuent esta bloqueada por un numero de intentos fallidos
+ *        content:
+ *         application/json:
+ *           schema:
+ *             type: string
  *    requestBody:
  *        required: true
  *        content:
@@ -123,17 +129,42 @@ router.get("/datos/:uid", async (req, res, next) => {
  */
 router.post("/datos/log", async (req, res, next) => {
   console.log(req.body);
-  let usuario = await Usuario.query().findOne({ email: req.body.email });
-  if (!usuario) {
-    return res.status(404).json("El correo ingresado no esta registrado");
+  try {
+    let usuario = await Usuario.query().findOne({ email: req.body.email });
+
+    if (!usuario) {
+      return res.status(404).json("El correo ingresado no esta registrado");
+    }
+    if (usuario.email && !usuario.contrasena) {
+      return res.status(451).json("Usuario registrado con google");
+    }
+    if (usuario.cuenta_bloqueada == 1) {
+      return res
+        .status(403)
+        .json("La cuenta ha sido bloqueada por demasiados intentos fallidos");
+    }
+    let contrasena = desencriptar(usuario.contrasena);
+    if (usuario.email && contrasena != req.body.contrasena) {
+      let intentos = usuario.intentos_fallidos + 1;
+      if (intentos >= 10) {
+        await usuario.$query().patch({
+          intentos_fallidos: intentos,
+          cuenta_bloqueada: 1,
+        });
+        return res
+          .status(403)
+          .json("La cuenta ha alcanzado 10 intentos incorrectos");
+      }
+      await usuario.$query().patch({ intentos_fallidos: intentos });
+      return res.status(401).json("Contraseña incorrecta");
+    }
+    if (usuario.intentos_fallidos > 0)
+      await usuario.$query().patch({ intentos_fallidos: 0 });
+    return res.status(200).json(usuario);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json("Ha ocurrido un error, intenta más tarde");
   }
-  if (usuario.email && !usuario.contrasena) {
-    return res.status(451).json("Usuario registrado con google");
-  }
-  let contrasena = desencriptar(usuario.contrasena);
-  if (usuario.email && contrasena != req.body.contrasena)
-    return res.status(401).json("Contraseña incorrecta");
-  return res.status(200).json(usuario);
 });
 
 /**
@@ -204,7 +235,7 @@ router.post("/registrar", async (req, res, next) => {
 
 /**
  * @swagger
- * /usuarios/reestablecerContrasena:
+ * /usuarios/solicitarReestablecerContrasena:
  *  post:
  *    summary: Permite mandar un correo a un usuario para restablecer su contraseña
  *    tags: [Usuario]
@@ -232,7 +263,7 @@ router.post("/registrar", async (req, res, next) => {
  *            type: string
  */
 router.post(
-  "/reestablecerContrasena",
+  "/solicitarReestablecerContrasena",
   async (req, res, next) => {
     //melkorgodo@gmail.com
     let usuario = await Usuario.query()
@@ -252,11 +283,28 @@ router.post(
       res.emailContent = {
         usuario: usuario.terapeuta.nombre,
       };
-    res.emailContent = {
-      ...res.emailContent,
-      url: `${process.env.FRONT_END_HOST}/reestablecerContrasena`,
-      urlBase: process.env.FRONT_END_HOST,
-    };
+    let fechaExpiracion = Date.now() + 600000; //Sumale 600000 milisegs / 10 minutos
+    let stringEncoded = encriptar(`${fechaExpiracion}/${usuario.id}`);
+    console.log(req.headers.host)
+    
+    try {
+      let contrasena = desencriptar(usuario.contrasena);
+      res.emailContent = {
+        ...res.emailContent,
+        urlReestablecer: `${process.env.FRONT_END_HOST}/reestablecerContrasena/${stringEncoded}`,
+        urlReactivar: `${req.protocol}://${req.headers.host}/usuarios/reactivarCuenta/${stringEncoded}`,
+        urlBase: process.env.FRONT_END_HOST,
+        contrasena: contrasena,
+      };
+    } catch (err) {
+      return res.status(500).json("Algo ha salido mal, intenta más tarde");
+    }
+    try {
+      await Usuario.query().findById(usuario.id).patch({ cambioContrasena: 1 });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json("Algo ha salido mal, intenta más tarde");
+    }
     res.emailTo = req.body.email;
     res.subject = "¡Hola! Reestablecer contraseña";
     res.htmlTemplate = "templates/email_reestablecer.ejs";
@@ -265,6 +313,7 @@ router.post(
   renderEmailMiddleware,
   async (req, res, next) => {
     try {
+      await Usuario;
       await enviarEmail(
         res.htmlRendered,
         res.emailTo,
@@ -279,6 +328,161 @@ router.post(
   }
 );
 
+/**
+ * @swagger
+ * /usuarios/reestablecerContrasena:
+ *  post:
+ *    summary: Permite reestablecer la contraseña de un usuario y reactivar su cuenta en dado caso
+ *    tags: [Usuario]
+ *    requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *            properties:
+ *              contrasena:
+ *                type: string
+ *              stringEncoded:
+ *                type: string
+ *    responses:
+ *      200:
+ *        description: Devuelve un mensaje indicando que la contraseña se ha cambiado correctamente
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      400:
+ *        description: Devuelve un mensaje de indicando que falta un campo
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      401:
+ *        description: Devuelve un mensaje de el link para reestablecer contraseña caduco
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      500:
+ *        description: Devuelve un mensaje de error
+ *        content:
+ *        application/json:
+ *          schema:
+ *            type: string
+ */
+router.post("/reestablecerContrasena", async (req, res, next) => {
+  //melkorgodo@gmail.com
+  let { contrasena, stringEncoded } = req.body;
+  if (!contrasena) {
+    return res.status(400).json("Falta la contraseña");
+  }
+  if (!stringEncoded) {
+    return res.status(400).json("Falta el stringEncoded");
+  }
+  let fechaExpiracion;
+  let idUsuario;
+  try {
+    let stringDecoded = desencriptar(stringEncoded);
+    fechaExpiracion = stringDecoded.split("/")[0]; //fecha/usuarioID
+    idUsuario = stringDecoded.split("/")[1];
+  } catch (error) {
+    return res.status(400).json("Dato encriptado no coincide con parametros");
+  }
+  try {
+    console.log(fechaExpiracion, ">", Date.now());
+    if (fechaExpiracion < Date.now()) {
+      await Usuario.query().findById(idUsuario).patch({ cambioContrasena: 0 });
+      return res.status(401).json("El link expiro");
+    }
+    let usuario = await Usuario.query().findById(idUsuario);
+    if (usuario.cambioContrasena === 0) {
+      return res.status(401).json("El link expiro");
+    }
+    let contrasenaEncriptada = encriptar(contrasena);
+    let result = await Usuario.query().patchAndFetchById(idUsuario, {
+      contrasena: contrasenaEncriptada,
+      cambioContrasena: 0,
+      intentos_fallidos: 0,
+      cuenta_bloqueada: 0,
+    });
+    console.log(result);
+    return res.status(200).json("Se ha cambiado correctamente la contraseña");
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+});
+
+/**
+ * @swagger
+ * /usuarios/reactivarCuenta/{stringEncoded}:
+ *  get:
+ *    summary: Permite reactivar una cuenta tras su bloqueo por intentos fallidos
+ *    tags: [Usuario]
+ *    responses:
+ *      302:
+ *        description: Redirecciona al login de la PWA
+ *      400:
+ *        description: Devuelve un mensaje de indicando que falta un campo o el stringEncoded no esta codificado correctamente
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      401:
+ *        description: Devuelve un mensaje de el link para reestablecer contraseña caduco
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      500:
+ *        description: Devuelve un mensaje de error
+ *        content:
+ *        application/json:
+ *          schema:
+ *            type: string
+ *    parameters:
+ *      - name: stringEncoded
+ *        description: stringEncoded es una string codificada en aes 256. La string previo al codificado tiene este formato "fechaExpiracion/usuarioID" Sin las comillas y fechaExpiracion viene dado por la funcion Date.now() de javascript. Se puede encriptar la string en la ruta de "encriptar" en "Utilidades"
+ *        in: path
+ *        required: true
+ * 
+ */
+router.get("/reactivarCuenta/:stringEncoded", async (req, res, next) => {
+  //melkorgodo@gmail.com
+  let { stringEncoded } = req.params;
+  console.log(req.params)
+  try {
+    if (!stringEncoded) {
+      return res.status(400).json("Falta stringEncoded");
+    }
+    let fechaExpiracion;
+    let idUsuario;
+    try {
+      let stringDecoded = desencriptar(stringEncoded);
+      fechaExpiracion = stringDecoded.split("/")[0]; //fecha/usuarioID
+      idUsuario = stringDecoded.split("/")[1];
+    } catch (err) {
+      return res
+        .status(400)
+        .json("Dato encriptado no coincide con los parametros");
+    }
+    let usuario = await Usuario.query().findById(idUsuario);
+    console.log(usuario)
+    if (fechaExpiracion < Date.now() || usuario.cuenta_bloqueada == 0) {
+      return res.status(401).json("El link expiro");
+    }
+    await usuario.$query().patch({
+      intentos_fallidos: 0,
+      cambioContrasena: 0,
+      cuenta_bloqueada: 0,
+    });
+    return res.redirect(process.env.FRONT_END_HOST)
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+});
 router.use("/fisioterapeutas", terapeutas);
 
 module.exports = router;

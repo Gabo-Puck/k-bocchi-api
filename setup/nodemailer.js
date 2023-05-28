@@ -10,7 +10,8 @@ const transporter = nodemailer.createTransport({
     },
     tls:{
         rejectUnauthorized: false
-    }
+    },
+    connectionTimeout:9000,
 })
 
 module.exports = {
