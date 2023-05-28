@@ -51,7 +51,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
 app.use("/utilidades", utilidadesRouter);
 app.use("/usuarios", usuario);
-app.use("/", swaggerUI.serve, swaggerUI.setup(swaggerJSDOC(swaggerSpec)));
+app.use("/docs", swaggerUI.serve, swaggerUI.setup(swaggerJSDOC(swaggerSpec)));
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

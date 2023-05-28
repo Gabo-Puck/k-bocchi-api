@@ -1,5 +1,5 @@
 const { body } = require("express-validator");
-const { Usuario } = require("../Models/Usuario");
+const Usuario = require("../Models/Usuario");
 
 exports.validarUsuario = () => {
   return [
@@ -21,3 +21,13 @@ exports.validarUsuario = () => {
     }),
   ];
 };
+
+exports.getUsuarios = async () =>
+  Usuario.query().withGraphFetched(["paciente,terapeuta"]);
+
+exports.getUsuario = async (uid) =>
+  Usuario.query().findById(uid).withGraphFetched(["paciente,terapeuta"]);
+
+exports.postUsuario = async (usuario) => Usuario.query().insertGraphAndFetch(usuario);
+
+exports.putUsuario = async (usuario) => Usuario.query().upsertGraphAndFetch(usuario)

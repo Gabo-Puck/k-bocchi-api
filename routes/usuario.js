@@ -4,6 +4,11 @@ const { v4: uuidv4, v4 } = require("uuid");
 const { encriptar, desencriptar } = require("../utils/encryption");
 var router = express.Router();
 var terapeutas = require("./terapeuta");
+const {
+  enviarEmailPrueba,
+  renderEmailMiddleware,
+  enviarEmail,
+} = require("../utils/emailModule");
 
 /**
  * @swagger
@@ -28,13 +33,12 @@ var terapeutas = require("./terapeuta");
  *          type: object
  *          $ref: '#/components/schemas/Fisioterapeuta'
  *      example:
- *          id: 1bcac0e9-5682-4fe2-a92f-55b0c552551f  
+ *          id: 1bcac0e9-5682-4fe2-a92f-55b0c552551f
  *          correo: bidenBlast@gmail.com
  *          contrasena: contrasenaS
  *          rol: paciente
- *          
+ *
  */
-
 
 /**
  * @swagger
@@ -121,9 +125,7 @@ router.post("/datos/log", async (req, res, next) => {
   console.log(req.body);
   let usuario = await Usuario.query().findOne({ email: req.body.email });
   if (!usuario) {
-    return res
-      .status(404)
-      .json("Usuario no encontrado en nuestra base de datos");
+    return res.status(404).json("El correo ingresado no esta registrado");
   }
   if (usuario.email && !usuario.contrasena) {
     return res.status(451).json("Usuario registrado con google");
@@ -135,10 +137,10 @@ router.post("/datos/log", async (req, res, next) => {
 });
 
 /**
- * @swagger 
+ * @swagger
  * /usuarios/datos/email:
  *  post:
- *    summary: Permite saber si un correo ya esta registrado 
+ *    summary: Permite saber si un correo ya esta registrado
  *    tags: [Usuario]
  *    requestBody:
  *      required: true
@@ -171,12 +173,11 @@ router.post("/datos/email", async (req, res, next) => {
   return res.status(200).json("ok");
 });
 
-
 /**
  * @swagger
  * /usuarios/registrar:
  *  post:
- *    summary: Permite crear un usuario 
+ *    summary: Permite crear un usuario
  *    tags: [Usuario]
  *    requestBody:
  *      required: true
@@ -200,6 +201,83 @@ router.post("/registrar", async (req, res, next) => {
       .send(`<p>Ha ocurrido un error:</p> \n <code>${error}</code>`);
   }
 });
+
+/**
+ * @swagger
+ * /usuarios/reestablecerContrasena:
+ *  post:
+ *    summary: Permite mandar un correo a un usuario para restablecer su contraseña
+ *    tags: [Usuario]
+ *    requestBody:
+ *      required: true
+ *      content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *            properties:
+ *              email:
+ *                type: string
+ *    responses:
+ *      200:
+ *        description: Devuelve un mensaje de ok indicando que se mando el correo
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      500:
+ *        description: Devuelve un mensaje de error indicando que no se pudo mandar el correo
+ *        content:
+ *        application/json:
+ *          schema:
+ *            type: string
+ */
+router.post(
+  "/reestablecerContrasena",
+  async (req, res, next) => {
+    //melkorgodo@gmail.com
+    let usuario = await Usuario.query()
+      .findOne({ email: req.body.email })
+      .withGraphFetched("[paciente,terapeuta]");
+    console.log(process.env.FRONT_END_HOST);
+    if (!usuario)
+      return res.status(400).json("Este correo no se encuentra registrado");
+    res.emailContent = {
+      usuario: usuario.nombre,
+    };
+    if (usuario.paciente)
+      res.emailContent = {
+        usuario: usuario.paciente.nombre,
+      };
+    else
+      res.emailContent = {
+        usuario: usuario.terapeuta.nombre,
+      };
+    res.emailContent = {
+      ...res.emailContent,
+      url: `${process.env.FRONT_END_HOST}/reestablecerContrasena`,
+      urlBase: process.env.FRONT_END_HOST,
+    };
+    res.emailTo = req.body.email;
+    res.subject = "¡Hola! Reestablecer contraseña";
+    res.htmlTemplate = "templates/email_reestablecer.ejs";
+    return next();
+  },
+  renderEmailMiddleware,
+  async (req, res, next) => {
+    try {
+      await enviarEmail(
+        res.htmlRendered,
+        res.emailTo,
+        "¡Hola! Reestablecer contraseña"
+      );
+      return res.status(200).json("Se ha mandado el correo");
+    } catch (err) {
+      return res
+        .status(500)
+        .json("Ha ocurrido un error, no hemos podido mandar el correo");
+    }
+  }
+);
 
 router.use("/fisioterapeutas", terapeutas);
 
