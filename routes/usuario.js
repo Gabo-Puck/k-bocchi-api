@@ -543,7 +543,11 @@ router.get("/validarLink/:stringEncoded", async (req, res, next) => {
       .status(400)
       .json("Dato encriptado no coincide con los parametros");
   }
-  if (fechaExpiracion < Date.now() || usuario.cuenta_bloqueada == 0) {
+  if (
+    fechaExpiracion < Date.now() ||
+    usuario.cuenta_bloqueada == 0 ||
+    cambioContrasena == 0
+  ) {
     return res.status(401).json("El link expiro");
   }
   return res.status(200).json("Link valido");
