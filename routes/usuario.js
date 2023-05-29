@@ -285,8 +285,8 @@ router.post(
       };
     let fechaExpiracion = Date.now() + 600000; //Sumale 600000 milisegs / 10 minutos
     let stringEncoded = encriptar(`${fechaExpiracion}/${usuario.id}`);
-    console.log(req.headers.host)
-    
+    console.log(req.headers.host);
+
     try {
       let contrasena = desencriptar(usuario.contrasena);
       res.emailContent = {
@@ -446,12 +446,12 @@ router.post("/reestablecerContrasena", async (req, res, next) => {
  *        description: stringEncoded es una string codificada en aes 256. La string previo al codificado tiene este formato "fechaExpiracion/usuarioID" Sin las comillas y fechaExpiracion viene dado por la funcion Date.now() de javascript. Se puede encriptar la string en la ruta de "encriptar" en "Utilidades"
  *        in: path
  *        required: true
- * 
+ *
  */
 router.get("/reactivarCuenta/:stringEncoded", async (req, res, next) => {
   //melkorgodo@gmail.com
   let { stringEncoded } = req.params;
-  console.log(req.params)
+  console.log(req.params);
   try {
     if (!stringEncoded) {
       return res.status(400).json("Falta stringEncoded");
@@ -468,7 +468,7 @@ router.get("/reactivarCuenta/:stringEncoded", async (req, res, next) => {
         .json("Dato encriptado no coincide con los parametros");
     }
     let usuario = await Usuario.query().findById(idUsuario);
-    console.log(usuario)
+    console.log(usuario);
     if (fechaExpiracion < Date.now() || usuario.cuenta_bloqueada == 0) {
       return res.status(401).json("El link expiro");
     }
@@ -477,12 +477,69 @@ router.get("/reactivarCuenta/:stringEncoded", async (req, res, next) => {
       cambioContrasena: 0,
       cuenta_bloqueada: 0,
     });
-    return res.redirect(process.env.FRONT_END_HOST)
+    return res.redirect(process.env.FRONT_END_HOST);
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo ha salido mal");
   }
 });
+
+/**
+ * @swagger
+ * /usuarios/validarLink/{stringEncoded}:
+ *  get:
+ *    summary: Permite validar un link para validacion de contraseña
+ *    tags: [Usuario]
+ *    responses:
+ *      401:
+ *        description: Devuelve un mensaje de el link para reestablecer contraseña caduco
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      400:
+ *        description: Devuelve un mensaje de error indicando que el link no esta encriptado correctamente
+ *        content:
+ *        application/json:
+ *          schema:
+ *            type: string
+ *      200:
+ *        description: Devuelve un mensaje de error indicando que el link es valido
+ *        content:
+ *        application/json:
+ *          schema:
+ *            type: string
+ *    parameters:
+ *      - name: stringEncoded
+ *        description: stringEncoded es una string codificada en aes 256. La string previo al codificado tiene este formato "fechaExpiracion/usuarioID" Sin las comillas y fechaExpiracion viene dado por la funcion Date.now() de javascript. Se puede encriptar la string en la ruta de "encriptar" en "Utilidades"
+ *        in: path
+ *        required: true
+ *
+ */
+
+
+
+router.get("/validarLink/:stringEncoded", async (req, res, next) => {
+  let usuario;
+  let {stringEncoded} = req.params
+  try {
+    let stringDecoded = desencriptar(stringEncoded);
+    fechaExpiracion = stringDecoded.split("/")[0]; //fecha/usuarioID
+    idUsuario = stringDecoded.split("/")[1];
+    usuario = await Usuario.query().findById(idUsuario);
+    console.log(usuario);
+  } catch (err) {
+    return res
+      .status(400)
+      .json("Dato encriptado no coincide con los parametros");
+  }
+  if (fechaExpiracion < Date.now() || usuario.cuenta_bloqueada == 0) {
+    return res.status(401).json("El link expiro");
+  }
+  return res.status(200).json("Link valido");
+});
+
+
 router.use("/fisioterapeutas", terapeutas);
 
 module.exports = router;
