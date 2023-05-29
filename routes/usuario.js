@@ -454,7 +454,7 @@ router.get("/reactivarCuenta/:stringEncoded", async (req, res, next) => {
   console.log(req.params);
   try {
     if (!stringEncoded) {
-      return res.status(400).json("Falta stringEncoded");
+      return res.status(400).json("El link utilizado no es valido");
     }
     let fechaExpiracion;
     let idUsuario;
@@ -465,12 +465,12 @@ router.get("/reactivarCuenta/:stringEncoded", async (req, res, next) => {
     } catch (err) {
       return res
         .status(400)
-        .json("Dato encriptado no coincide con los parametros");
+        .json("El link utilizado tiene un formato incorrecto");
     }
     let usuario = await Usuario.query().findById(idUsuario);
     console.log(usuario);
     if (fechaExpiracion < Date.now() || usuario.cuenta_bloqueada == 0) {
-      return res.status(401).json("El link expiro");
+      return res.status(401).json("El link que se esta usando ha expirado");
     }
     await usuario.$query().patch({
       intentos_fallidos: 0,
