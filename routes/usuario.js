@@ -291,7 +291,7 @@ router.post(
       let contrasena = desencriptar(usuario.contrasena);
       res.emailContent = {
         ...res.emailContent,
-        urlReestablecer: `${process.env.FRONT_END_HOST}/reestablecerContrasena/${stringEncoded}`,
+        urlReestablecer: `${process.env.FRONT_END_HOST}/reestablecerContrasena/?stringEncoded=${stringEncoded}`,
         urlReactivar: `${req.protocol}://${req.headers.host}/usuarios/reactivarCuenta/${stringEncoded}`,
         urlBase: process.env.FRONT_END_HOST,
         contrasena: contrasena,
