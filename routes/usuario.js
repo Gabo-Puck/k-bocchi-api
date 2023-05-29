@@ -364,6 +364,12 @@ router.post(
  *          application/json:
  *            schema:
  *              type: string
+ *      409:
+ *        description: Devuelve un mensaje indicando que la contraseña actual es la misma que la ingresada
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
  *      500:
  *        description: Devuelve un mensaje de error
  *        content:
@@ -400,6 +406,12 @@ router.post("/reestablecerContrasena", async (req, res, next) => {
       return res.status(401).json("El link expiro");
     }
     let contrasenaEncriptada = encriptar(contrasena);
+    if (usuario.contrasena == contrasenaEncriptada)
+      return res
+        .status(409)
+        .json(
+          "La contraseña ingresada tiene que ser diferente a la contraseña actual de la cuenta"
+        );
     let result = await Usuario.query().patchAndFetchById(idUsuario, {
       contrasena: contrasenaEncriptada,
       cambioContrasena: 0,
@@ -517,11 +529,9 @@ router.get("/reactivarCuenta/:stringEncoded", async (req, res, next) => {
  *
  */
 
-
-
 router.get("/validarLink/:stringEncoded", async (req, res, next) => {
   let usuario;
-  let {stringEncoded} = req.params
+  let { stringEncoded } = req.params;
   try {
     let stringDecoded = desencriptar(stringEncoded);
     fechaExpiracion = stringDecoded.split("/")[0]; //fecha/usuarioID
@@ -538,7 +548,6 @@ router.get("/validarLink/:stringEncoded", async (req, res, next) => {
   }
   return res.status(200).json("Link valido");
 });
-
 
 router.use("/fisioterapeutas", terapeutas);
 
