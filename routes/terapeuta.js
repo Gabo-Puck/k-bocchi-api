@@ -151,48 +151,53 @@ router.post("/login", async (req, res, next) => {
  *              $ref: '#/components/schemas/Usuario'
  *    parameters:
  *        - in: query
+ *          description: Filtro para nombre
  *          name: nombre
  *          schema:
  *            type: string
- *            description: Filtro para nombre
  *        - in: query
  *          name: servicio_domicilio
+ *          description: Filtro para terapeutas con servicio a domicilio
  *          schema:
  *            type: boolean
- *            description: Filtro para terapeutas con servicio a domicilio
  *        - in: query
  *          name: pago_minimo
+ *          description: Filtro para terapeutas a partir de un pago minimo
  *          schema:
  *            type: number
- *            description: Filtro para terapeutas a partir de un pago minimo
  *        - in: query
  *          name: pago_maximo
+ *          description: Filtro para terapeutas a partir de un pago maximo
  *          schema:
  *            type: number
- *            description: Filtro para terapeutas a partir de un pago maximo
  *        - in: query
  *          name: estrellas
+ *          description: Filtro para terapeutas a partir de una cierta cantidad de promedio de estrellas
  *          schema:
  *            type: number
- *            description: Filtro para terapeutas a partir de una cierta cantidad de promedio de estrellas
  *        - in: query
  *          name: lat
+ *          description: Filtro para la ubicacion, indica la latitud (son necesarios ambos para la distancia, lat y lng)
  *          schema:
  *            type: number
- *            description: Filtro para la ubicacion, indica la latitud (son necesarios ambos para la distancia, lat y lng)
  *        - in: query
  *          name: lng
+ *          description: Filtro para la ubicacion, indica la longitud (son necesarios ambos para la distancia, lat y lng)
  *          schema:
  *            type: number
- *            description: Filtro para la ubicacion, indica la longitud (son necesarios ambos para la distancia, lat y lng)
+ *        - in: query
+ *          name: distancia
+ *          description: Filtro para la ubicacion, indica la distancia máxima (son necesarios ambos para la distancia, lat y lng)
+ *          schema:
+ *            type: number
  *        - in: query
  *          name: con_consultorio
+ *          description: filtro para terapeutas con consultorio
  *          schema:
  *            type: boolean
- *            description: filtro para terapeutas con consultorio
- *  
- *            
- *    
+ *
+ *
+ *
  */
 router.get("/buscar", async (req, res, next) => {
   let {
@@ -203,7 +208,8 @@ router.get("/buscar", async (req, res, next) => {
     estrellas,
     lng,
     lat,
-    con_consultorio
+    con_consultorio,
+    distancia,
   } = req.query;
   console.log(nombre);
   let usuarios = await Usuario.query()
@@ -211,11 +217,17 @@ router.get("/buscar", async (req, res, next) => {
     .withGraphJoined("terapeuta.[resenas]")
     .modify((builder) => {
       if (lng && lat) {
-        builder.select(
-          raw(
-            `FN_DIST_HAVERSINE(terapeuta.lat, terapeuta.lng, ${lat}, ${lng}) as dist`
+        builder
+          .select(
+            raw(
+              `FN_DIST_HAVERSINE(terapeuta.lat, terapeuta.lng, ${lat}, ${lng}) as dist`
+            )
           )
-        );
+          .andWhereRaw(
+            `FN_DIST_HAVERSINE(terapeuta.lat, terapeuta.lng, ${lat}, ${lng}) <= ${
+              distancia || 15
+            }`
+          ); //default 15km
       }
     })
     .modify((q) => {
@@ -224,6 +236,7 @@ router.get("/buscar", async (req, res, next) => {
           `(usuarios.nombre like "%${nombre}%" OR terapeuta.nombre_del_consultorio like "%${nombre}%")`
         );
       }
+
       if (servicio_domicilio) {
         q.andWhere(
           "terapeuta.servicio_domicilio",
@@ -231,11 +244,11 @@ router.get("/buscar", async (req, res, next) => {
           servicio_domicilio === "true" ? 1 : 0
         );
       }
-      if(con_consultorio==="false"){
-        q.andWhere("terapeuta.nombre_del_consultorio","=","")
+      if (con_consultorio === "false") {
+        q.andWhere("terapeuta.nombre_del_consultorio", "=", "");
       }
-      if(con_consultorio==="true"){
-        q.andWhere("terapeuta.nombre_del_consultorio","is null")
+      if (con_consultorio === "true") {
+        q.andWhere("terapeuta.nombre_del_consultorio", "<>", "");
       }
       //t 550 - 700
       //p 5 - 500

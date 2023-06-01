@@ -432,7 +432,7 @@ function generarTerapeutas(cantidad) {
     let lat = 20.68 + generarNumerosAleatorios(0, 0.05);
     let numero_cedula = Math.round(generarNumerosAleatorios(999999, 9999999));
     let conConsultorio = Math.round(generarNumerosAleatorios(0, 1));
-    let nombre_del_consultorio = null;
+    let nombre_del_consultorio = "";
     if (conConsultorio) {
       let index = Math.round(
         generarNumerosAleatorios(0, consultorio.length - 1)
