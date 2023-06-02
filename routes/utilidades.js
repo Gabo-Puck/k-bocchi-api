@@ -414,7 +414,7 @@ function generarUsuarios(cantidad, rol) {
     console.log(element);
     let usuario = {
       id: uuidv4() + "mock",
-      email: `${element.replaceAll(/\s/g, '')}${index}@gmail.com`,
+      email: `${element.replace(/\s/g, '')}${index}@gmail.com`,
       contrasena: `YjFkNzUzOGJlNDVhYTYyNTRjZTk2ZmMzNjJlMTQyYTM=`,
       nombre: element,
       rol: rol,
