@@ -432,6 +432,7 @@ function generarTerapeutas(cantidad) {
     let lat = 20.68 + generarNumerosAleatorios(0, 0.05);
     let numero_cedula = Math.round(generarNumerosAleatorios(999999, 9999999));
     let conConsultorio = Math.round(generarNumerosAleatorios(0, 1));
+    let domicilio = "Domicilio de prueba 1731, Zapopan, Jalisco."
     let nombre_del_consultorio = "";
     if (conConsultorio) {
       let index = Math.round(
@@ -449,6 +450,7 @@ function generarTerapeutas(cantidad) {
         lat,
         numero_cedula,
         nombre_del_consultorio,
+        domicilio
       },
     };
   });
