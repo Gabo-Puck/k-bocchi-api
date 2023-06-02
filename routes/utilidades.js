@@ -13,6 +13,7 @@ const Terapeuta = require("../Models/Terapeuta");
 const Paciente = require("../Models/Paciente");
 const Comentario = require("../Models/Comentario");
 const Resena = require("../Models/Resenas");
+
 const consultorio=[
   "Cura activa",
   "Mente sana",
