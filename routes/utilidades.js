@@ -14,9 +14,8 @@ const Paciente = require("../Models/Paciente");
 const Comentario = require("../Models/Comentario");
 const Resena = require("../Models/Resenas");
 
-const consultorio=require("../dummyData/consultorio.json")
-const nombres = require("../dummyData/nombres.json")
-
+const consultorio = require("../dummyData/consultorio.json");
+const nombres = require("../dummyData/nombres.json");
 
 /**
  * @swagger
@@ -331,9 +330,11 @@ router.post("/createDummyResenasComentarios", async (req, res, next) => {
       terapeutas,
       pacientes
     );
-    let comentarios = await Comentario.query().insertGraphAndFetch(mockup_data.comentarios);
+    let comentarios = await Comentario.query().insertGraphAndFetch(
+      mockup_data.comentarios
+    );
     let resenas = await Resena.query().insertGraphAndFetch(mockup_data.resenas);
-    return res.status(200).json({comentarios,resenas});
+    return res.status(200).json({ comentarios, resenas });
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo salio mal generando mock data");
@@ -394,7 +395,7 @@ function generarComentariosResenas(cantidad, terapeutas, pacientes) {
       id_paciente: pacientes[indexPac].id,
       id_terapeuta: terapeutas[indexTer].id,
       contenido: "Comentario de prueba",
-      fecha: new Date(fecha).toISOString().slice(0,19).replace("T"," "),
+      fecha: new Date(fecha).toISOString().slice(0, 19).replace("T", " "),
     };
     comentarios.push(comentario);
   }
@@ -414,7 +415,7 @@ function generarUsuarios(cantidad, rol) {
     console.log(element);
     let usuario = {
       id: uuidv4() + "mock",
-      email: `${element.replace(/\s/g, '')}${index}@gmail.com`,
+      email: `${element.replace(/\s/g, "")}${index}@gmail.com`,
       contrasena: `YjFkNzUzOGJlNDVhYTYyNTRjZTk2ZmMzNjJlMTQyYTM=`,
       nombre: element,
       rol: rol,
@@ -437,13 +438,17 @@ function generarTerapeutas(cantidad) {
     let lat = 20.68 + generarNumerosAleatorios(0, 0.05);
     let numero_cedula = Math.round(generarNumerosAleatorios(999999, 9999999));
     let conConsultorio = Math.round(generarNumerosAleatorios(0, 1));
-    let domicilio = "Domicilio de prueba 1731, Zapopan, Jalisco."
+    let domicilio = "Domicilio de prueba 1731, Zapopan, Jalisco.";
     let nombre_del_consultorio = "";
     if (conConsultorio) {
       let index = Math.round(
         generarNumerosAleatorios(0, consultorio.length - 1)
       );
       nombre_del_consultorio = consultorio[index];
+    } 
+    if (servicio_domicilio == 0&&!conConsultorio) {
+      console.log(usuario.nombre);
+      servicio_domicilio = 1;
     }
     return {
       ...usuario,
@@ -455,7 +460,7 @@ function generarTerapeutas(cantidad) {
         lat,
         numero_cedula,
         nombre_del_consultorio,
-        domicilio
+        domicilio,
       },
     };
   });
