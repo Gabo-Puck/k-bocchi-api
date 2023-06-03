@@ -334,8 +334,9 @@ router.get("/:id", async (req, res, next) => {
       builder.avg("estrellas as promedio");
       builder.groupBy("id_terapeuta");
     });
-  console.log(terapeuta);
-  let resenas_comentarios;
+  if(!terapeuta)
+    return res.tatus(404).json("No existe ese terapeuta");
+  
   return res.status(200).json(terapeuta);
 });
 
