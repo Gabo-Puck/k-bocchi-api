@@ -317,27 +317,30 @@ router.get("/buscar", async (req, res, next) => {
  *
  */
 router.get("/:id", async (req, res, next) => {
-  let { id } = req.params;
-  console.log(id);
-  let terapeuta = await Terapeuta.query()
-    .findOne({ 
-      "terapeutas.id": id })
-    .withGraphJoined(
-      "[comentarios.[comentario_paciente.resenas],resenas,usuario]"
-    )
-    .modifyGraph(
-      "comentarios.[comentario_paciente.resenas]",
-      (builder) => {
+  try {
+    let { id } = req.params;
+    console.log(id);
+    let terapeuta = await Terapeuta.query()
+      .findOne({
+        "terapeutas.id": id,
+      })
+      .withGraphJoined(
+        "[comentarios.[comentario_paciente.[resenas,usuario]],resenas,usuario]"
+      )
+      .modifyGraph("comentarios.[comentario_paciente.resenas]", (builder) => {
         builder.where("id_terapeuta", "=", id);
-      }
-    ).modifyGraph("resenas",(builder)=>{
-      builder.avg("estrellas as promedio");
-      builder.groupBy("id_terapeuta");
-    });
-  if(!terapeuta)
-    return res.tatus(404).json("No existe ese terapeuta");
-  
-  return res.status(200).json(terapeuta);
+      })
+      .modifyGraph("resenas", (builder) => {
+        builder.avg("estrellas as promedio");
+        builder.groupBy("id_terapeuta");
+      });
+    if (!terapeuta) return res.status(404).json("No existe ese terapeuta");
+
+    return res.status(200).json(terapeuta);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Ha ocurrido un error");
+  }
 });
 
 module.exports = router;
