@@ -280,5 +280,63 @@ router.get("/buscar", async (req, res, next) => {
     resultados: usuarios,
   });
 });
+/**
+ * @swagger
+ * /usuarios/fisioterapeutas/{id}:
+ *  get:
+ *    summary: Permite obtener un fisioterapeuta en base a su id de usuario
+ *    tags: [Fisioterapeuta]
+ *    responses:
+ *      "200":
+ *        description: Devuelve los datos completos del terapeuta encontrado
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                count:
+ *                  type: number
+ *                resultados:
+ *                  type: object
+ *                  $ref: '#/components/schemas/Usuario'
+ *      "404":
+ *        description: Devuelve un mensaje indicando que no se encontro el fisioterapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              $ref: '#/components/schemas/Usuario'
+ *    parameters:
+ *        - in: path
+ *          description: ID del usuario terapeuta
+ *          name: id
+ *          schema:
+ *            type: string
+ *
+ *
+ *
+ */
+router.get("/:id", async (req, res, next) => {
+  let { id } = req.params;
+  console.log(id);
+  let terapeuta = await Terapeuta.query()
+    .findOne({ 
+      "terapeutas.id": id })
+    .withGraphJoined(
+      "[comentarios.[comentario_paciente.resenas],resenas,usuario]"
+    )
+    .modifyGraph(
+      "comentarios.[comentario_paciente.resenas]",
+      (builder) => {
+        builder.where("id_terapeuta", "=", id);
+      }
+    ).modifyGraph("resenas",(builder)=>{
+      builder.avg("estrellas as promedio");
+      builder.groupBy("id_terapeuta");
+    });
+  console.log(terapeuta);
+  let resenas_comentarios;
+  return res.status(200).json(terapeuta);
+});
 
 module.exports = router;
