@@ -4,8 +4,8 @@ var router = express.Router();
 var Usuario = require("../Models/Usuario");
 const { encriptar, desencriptar } = require("../utils/encryption");
 const { getAuth } = require("firebase-admin/auth");
-const { scrapCedula } = require("../webScapping");
-const { validarCedulaOCR } = require("../testVision/cloudVision");
+const { scrapCedula } = require("../modules/webScapping");
+const { validarCedulaOCR } = require("../modules/vision/cloudVision");
 
 const { ROLES } = require("../roles");
 const { raw } = require("mysql");

@@ -8,7 +8,7 @@ const {
   enviarEmailPrueba,
   renderEmailMiddleware,
   enviarEmail,
-} = require("../utils/emailModule");
+} = require("../modules/email/emailModule");
 
 /**
  * @swagger

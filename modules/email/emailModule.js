@@ -1,4 +1,4 @@
-const { transporter } = require("../setup/nodemailer");
+const { transporter } = require("../../setup/nodemailer");
 const nodemailer = require("nodemailer");
 let sender = "kbocchi.email.system@gmail.com";
 async function enviarEmail(html,emailTo,subject) {

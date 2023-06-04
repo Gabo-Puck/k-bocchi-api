@@ -33,7 +33,9 @@ var app = express();
 
 const admin = require("firebase-admin");
 const serviceAccount = require("./kbocchi-1254b-firebase-adminsdk-9ltt9-16cf6fa56d.json");
-const { validateCedula } = require("./testVision/cloudVision");
+const { validateCedula } = require("./modules/vision/cloudVision");
+
+
 
 
 admin.initializeApp({
