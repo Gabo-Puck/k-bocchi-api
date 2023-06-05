@@ -3,7 +3,9 @@ const connectedUsers = new Set();
 function initServer(httpServer) {
   console.log(httpServer);
   const io = new Server(httpServer, {
-    cors: [process.env.FRONT_END_HOST],
+    cors: {
+      origin: "*"
+      },
   });
   io.of("/").adapter.on("create-room", (room) => {
     console.log(`\n\rLa sala ${room} fue creada\n\r`);
