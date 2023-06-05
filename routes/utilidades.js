@@ -16,6 +16,7 @@ const Resena = require("../Models/Resenas");
 
 const consultorio = require("../dummyData/consultorio.json");
 const nombres = require("../dummyData/nombres.json");
+const horarios = require("../dummyData/horarios.json");
 
 /**
  * @swagger
@@ -438,6 +439,11 @@ function generarTerapeutas(cantidad) {
     let lat = 20.68 + generarNumerosAleatorios(0, 0.05);
     let numero_cedula = Math.round(generarNumerosAleatorios(999999, 9999999));
     let conConsultorio = Math.round(generarNumerosAleatorios(0, 1));
+    let horarioIndex = Math.round(
+      generarNumerosAleatorios(0, horarios.length - 1)
+    );
+    let horario = horarios[horarioIndex];
+    console.log({ horarioIndex, horario });
     let domicilio = "Domicilio de prueba 1731, Zapopan, Jalisco.";
     let nombre_del_consultorio = "";
     if (conConsultorio) {
@@ -445,8 +451,8 @@ function generarTerapeutas(cantidad) {
         generarNumerosAleatorios(0, consultorio.length - 1)
       );
       nombre_del_consultorio = consultorio[index];
-    } 
-    if (servicio_domicilio == 0&&!conConsultorio) {
+    }
+    if (servicio_domicilio == 0 && !conConsultorio) {
       console.log(usuario.nombre);
       servicio_domicilio = 1;
     }
@@ -461,6 +467,7 @@ function generarTerapeutas(cantidad) {
         numero_cedula,
         nombre_del_consultorio,
         domicilio,
+        horario,
       },
     };
   });

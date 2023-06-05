@@ -1,4 +1,5 @@
 const { Model } = require("objection");
+const { Horario } = require("./Horario");
 class Terapeuta extends Model {
   static get tableName() {
     return "terapeutas";
@@ -31,6 +32,14 @@ class Terapeuta extends Model {
         join: {
           from: "terapeutas.id",
           to: "comentarios.id_terapeuta",
+        },
+      },
+      horario: {
+        relation: Model.HasManyRelation,
+        modelClass: Horario,
+        join: {
+          from: "terapeutas.id",
+          to: "horarios.id_terapeuta",
         },
       },
     };

@@ -10,6 +10,7 @@ var cors = require("cors");
 var indexRouter = require("./routes/index");
 var usuario = require("./routes/usuario");
 var utilidadesRouter = require("./routes/utilidades");
+var citasRouter = require("./routes/citas");
 var fileUpload = require("express-fileupload");
 var { knex } = require("./setup/knexfile");
 
@@ -55,6 +56,7 @@ app.use(cors());
 app.use("/utilidades", utilidadesRouter);
 app.use("/usuarios", usuario);
 app.use("/docs", swaggerUI.serve, swaggerUI.setup(swaggerJSDOC(swaggerSpec)));
+app.use("/citas",citasRouter)
 app.use("/", indexRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
