@@ -342,5 +342,57 @@ router.get("/:id", async (req, res, next) => {
     return res.status(500).json("Ha ocurrido un error");
   }
 });
+/**
+ * @swagger
+ * /usuarios/fisioterapeutas/buscarNombre/{nombre}:
+ *  get:
+ *    summary: Permite obtener un fisioterapeuta en base a su nombre completo
+ *    tags: [Fisioterapeuta]
+ *    responses:
+ *      "200":
+ *        description: Devuelve los datos completos del terapeuta encontrado
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                count:
+ *                  type: number
+ *                resultados:
+ *                  type: array
+ *                  items:
+ *                    type: object
+ *                    $ref: '#/components/schemas/Usuario'
+ *      "500":
+ *        description: Devuelve un mensaje indicando que algo salio mal
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              $ref: '#/components/schemas/Usuario'
+ *    parameters:
+ *        - in: path
+ *          description: Nombre completo del terapeuta
+ *          name: nombre
+ *          schema:
+ *            type: string
+ *
+ *
+ *
+ */
+router.get("/buscarNombre/:nombre", async (req, res, next) => {
+  try {
+    let { nombre } = req.params;
+    let terapeutas = await Terapeuta.query()
+      .withGraphJoined("usuario")
+      .whereRaw(
+        `(usuario.nombre like "%${nombre}%")`
+      );
+    return res.status(200).json(terapeutas);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Ha ocurrido un error");
+  }
+});
 
 module.exports = router;
