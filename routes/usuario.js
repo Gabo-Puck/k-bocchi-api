@@ -10,7 +10,6 @@ const {
   enviarEmail,
 } = require("../modules/email/emailModule");
 
-
 /**
  * @swagger
  * components:
@@ -131,7 +130,9 @@ router.get("/datos/:uid", async (req, res, next) => {
 router.post("/datos/log", async (req, res, next) => {
   console.log(req.body);
   try {
-    let usuario = await Usuario.query().findOne({ email: req.body.email });
+    let usuario = await Usuario.query()
+      .withGraphJoined("[paciente,terapeuta]")
+      .findOne({ email: req.body.email });
 
     if (!usuario) {
       return res.status(404).json("El correo ingresado no esta registrado");
