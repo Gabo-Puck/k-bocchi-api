@@ -150,3 +150,4 @@ async function obtenerHorariosDisponibles(horario_dia, citas, fecha) {
 }
 // console.log(citas);
 // call();
+

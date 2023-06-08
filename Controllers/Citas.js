@@ -1,5 +1,7 @@
 const { Cita } = require("../Models/Cita");
 const date = require("date-and-time");
+// const patternFecha = date.compile("YYYY-MM-DD"); //Formateador que permite convertir un objeto Date a un string con el formato indicado de fecha
+
 exports.crearCita = async (req, res, next) => {
   try {
     let cita = req.body;
@@ -65,17 +67,20 @@ exports.verCitasTerapeuta = async (req, res, next) => {
     let { fecha } = req.query;
     let citas = await Cita.query()
       .where("id_terapeuta", "=", id_terapeuta)
-      .modify((builder) => {
-        let objFecha = new Date(fecha);
-        if (fecha && !isNaN(objFecha)) {
-          let fechaLimite = date.addDays(objFecha, 1);
-          builder
-            .where("fecha", ">=", fecha)
-            .andWhere("fecha", "<", fechaLimite);
-        }
-      })
-      .orderBy("fecha", "DESC");
+      // .modify((builder) => {
+      //   // let fechaInicio = date.parse(fecha,patternFecha);
+      //   // if (fecha && !isNaN(fechaInicio)) {
+      //     // let fechaLimite = date.addDays(fechaInicio, 1);
+      //     // let fecha1 = date.format(fechaInicio,patternFecha);
+      //     // let fecha2 = date.format(fechaLimite,patternFecha);
+      //     builder
+      //       .andWhere("fecha", ">=", "2023-06-20")
+      //       .andWhere("fecha", "<", "2023-06-21");
+      //   // }
+      // })
+      // .orderBy("fecha", "DESC").debug();
     res.body = { ...res.body, citas };
+    next();
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo ha salido mal");

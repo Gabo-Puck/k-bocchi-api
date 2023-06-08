@@ -321,11 +321,13 @@ router.get(
  */
 router.get(
   "/obtenerCitas/:id_terapeuta",
-  existeTerapeuta,
-  verHorario,
-  verCitasTerapeuta
+  // existeTerapeuta,
+  // verHorario,
+  verCitasTerapeuta,
+  (req, res, next) => {
+    console.log(res.body);
+    res.status(200).json(res.body);
+  }
 );
-
-
 
 module.exports = router;
