@@ -1,7 +1,7 @@
 const { Server } = require("socket.io");
 const connectedUsers = new Set();
 function initServer(httpServer) {
-  console.log(httpServer);
+  // console.log(httpServer);
   const io = new Server(httpServer, {
     cors: {
       origin: "*"

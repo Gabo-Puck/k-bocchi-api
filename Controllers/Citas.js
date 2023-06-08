@@ -1,5 +1,5 @@
 const { Cita } = require("../Models/Cita");
-
+const date = require("date-and-time");
 exports.crearCita = async (req, res, next) => {
   try {
     let cita = req.body;
@@ -53,6 +53,29 @@ exports.verTodasCitas = async (req, res, next) => {
   try {
     let citas = await Cita.query();
     return res.status(200).json(citas);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+
+exports.verCitasTerapeuta = async (req, res, next) => {
+  try {
+    let { id_terapeuta } = req.params;
+    let { fecha } = req.query;
+    let citas = await Cita.query()
+      .where("id_terapeuta", "=", id_terapeuta)
+      .modify((builder) => {
+        let objFecha = new Date(fecha);
+        if (fecha && !isNaN(objFecha)) {
+          let fechaLimite = date.addDays(objFecha, 1);
+          builder
+            .where("fecha", ">=", fecha)
+            .andWhere("fecha", "<", fechaLimite);
+        }
+      })
+      .orderBy("fecha", "DESC");
+    res.body = { ...res.body, citas };
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo ha salido mal");

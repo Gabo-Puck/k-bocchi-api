@@ -5,6 +5,13 @@ const { ROLES } = require("../roles");
 const { Model, raw } = require("objection");
 const Terapeuta = require("../Models/Terapeuta");
 const knex = require("../setup/knexfile");
+const { verHorario } = require("../Controllers/Horario");
+const {
+  verTerapeutaDetalles,
+  buscarTerapeutas,
+  loginTerapeuta,
+  existeTerapeuta,
+} = require("../Controllers/Terapeuta");
 const router = express.Router();
 
 /**
@@ -57,6 +64,40 @@ const router = express.Router();
  *
  */
 
+/**
+ * @swagger
+ * components:
+ *  schemas:
+ *    Horario:
+ *      type: object
+ *      properties:
+ *        id:
+ *          type: integer
+ *          description: Es el identificador del horario
+ *        id_terapeuta:
+ *          type: string
+ *          description: Es el identificador del terapeuta
+ *        dia:
+ *          type: string
+ *          enum: [lunes,martes,miercoles,jueves,viernes,sabado,domingo]
+ *          description: Es el día de la semana
+ *        horario_inicio:
+ *          type: string
+ *          description: Es la hora de inicio de trabajo
+ *          pattern: '^(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])'
+ *        horario_fin:
+ *          type: string
+ *          description: Es la hora de fin de trabajo
+ *          pattern: '^(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])'
+ *      example:
+ *          id: 3
+ *          id_terapeuta: 6
+ *          dia: "lunes"
+ *          horario_inicio: 07:00:00
+ *          horario_fin: 17:00:00
+ *
+ */
+
 //Ruta para validación de terapeutas
 
 /**
@@ -103,25 +144,7 @@ const router = express.Router();
  *                contrasena:
  *                  type: string
  */
-router.post("/login", async (req, res, next) => {
-  console.log(req.body);
-  let usuarioFisio = await Usuario.query().findOne({ email: req.body.email });
-  if (!usuarioFisio) {
-    return res
-      .status(404)
-      .json("Usuario no encontrado en nuestra base de datos");
-  }
-  if (usuarioFisio.rol == "paciente") {
-    return res.status(401).json("Usuario no es de tipo fisioterapeuta");
-  }
-  if (usuarioFisio.email && !usuarioFisio.contrasena) {
-    return res.status(451).json("Usuario registrado con google");
-  }
-  let contrasena = desencriptar(usuarioFisio.contrasena);
-  if (usuarioFisio.email && contrasena != req.body.contrasena)
-    return res.status(401).json("Contraseña incorrecta");
-  return res.json(usuarioFisio);
-});
+router.post("/login", loginTerapeuta);
 
 /**
  * @swagger
@@ -199,90 +222,10 @@ router.post("/login", async (req, res, next) => {
  *
  *
  */
-router.get("/buscar", async (req, res, next) => {
-  let {
-    nombre,
-    servicio_domicilio,
-    pago_minimo,
-    pago_maximo,
-    estrellas,
-    lng,
-    lat,
-    con_consultorio,
-    distancia,
-  } = req.query;
-  console.log(nombre);
-  let usuarios = await Usuario.query()
-    .where("rol", "=", ROLES.FISIOTERAPEUTA)
-    .withGraphJoined("terapeuta.[resenas]")
-    .modify((builder) => {
-      if (lng && lat) {
-        builder
-          .select(
-            raw(
-              `FN_DIST_HAVERSINE(terapeuta.lat, terapeuta.lng, ${lat}, ${lng}) as dist`
-            )
-          )
-          .andWhereRaw(
-            `FN_DIST_HAVERSINE(terapeuta.lat, terapeuta.lng, ${lat}, ${lng}) <= ${
-              distancia || 15
-            }`
-          ); //default 15km
-      }
-    })
-    .modify((q) => {
-      if (nombre) {
-        q.whereRaw(
-          `(usuarios.nombre like "%${nombre}%" OR terapeuta.nombre_del_consultorio like "%${nombre}%")`
-        );
-      }
-
-      if (servicio_domicilio) {
-        q.andWhere(
-          "terapeuta.servicio_domicilio",
-          "=",
-          servicio_domicilio === "true" ? 1 : 0
-        );
-      }
-      if (con_consultorio === "false") {
-        q.andWhere("terapeuta.nombre_del_consultorio", "=", "");
-      }
-      if (con_consultorio === "true") {
-        q.andWhere("terapeuta.nombre_del_consultorio", "<>", "");
-      }
-      //t 550 - 700
-      //p 5 - 500
-      q.andWhere(
-        "terapeuta.pago_minimo",
-        "<=",
-        Number(pago_maximo || Number.MAX_SAFE_INTEGER)
-      ).andWhere(
-        "terapeuta.pago_maximo",
-        ">=",
-        Number(pago_minimo || Number.MIN_SAFE_INTEGER)
-      );
-    })
-    .modifyGraph("terapeuta.resenas", (builder) => {
-      builder.avg("estrellas as promedio");
-      builder.groupBy("id_terapeuta");
-      // builder.where("promedio",">=",5)
-    })
-    .modify((q) => {
-      q.orderBy("terapeuta:resenas.promedio", "DESC");
-      if (estrellas) q.where("terapeuta:resenas.promedio", ">=", estrellas);
-    })
-
-    // .avg("terapeuta:resenas.id_terapeuta")
-    .debug();
-
-  return res.json({
-    count: usuarios.length,
-    resultados: usuarios,
-  });
-});
+router.get("/buscar", buscarTerapeutas);
 /**
  * @swagger
- * /usuarios/fisioterapeutas/{id}:
+ * /usuarios/fisioterapeutas/{id_terapeuta}:
  *  get:
  *    summary: Permite obtener un fisioterapeuta en base a su id de usuario
  *    tags: [Fisioterapeuta]
@@ -309,39 +252,14 @@ router.get("/buscar", async (req, res, next) => {
  *    parameters:
  *        - in: path
  *          description: ID del usuario terapeuta
- *          name: id
+ *          name: id_terapeuta
  *          schema:
  *            type: string
  *
  *
  *
  */
-router.get("/:id", async (req, res, next) => {
-  try {
-    let { id } = req.params;
-    console.log(id);
-    let terapeuta = await Terapeuta.query()
-      .findOne({
-        "terapeutas.id": id,
-      })
-      .withGraphJoined(
-        "[comentarios.[comentario_paciente.[resenas,usuario]],resenas,usuario]"
-      )
-      .modifyGraph("comentarios.[comentario_paciente.resenas]", (builder) => {
-        builder.where("id_terapeuta", "=", id);
-      })
-      .modifyGraph("resenas", (builder) => {
-        builder.avg("estrellas as promedio");
-        builder.groupBy("id_terapeuta");
-      });
-    if (!terapeuta) return res.status(404).json("No existe ese terapeuta");
-
-    return res.status(200).json(terapeuta);
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json("Ha ocurrido un error");
-  }
-});
+router.get("/:id_terapeuta", verTerapeutaDetalles);
 /**
  * @swagger
  * /usuarios/fisioterapeutas/buscarNombre/{nombre}:
@@ -385,14 +303,62 @@ router.get("/buscarNombre/:nombre", async (req, res, next) => {
     let { nombre } = req.params;
     let terapeutas = await Terapeuta.query()
       .withGraphJoined("usuario")
-      .whereRaw(
-        `(usuario.nombre like "%${nombre}%")`
-      );
+      .whereRaw(`(usuario.nombre like "%${nombre}%")`);
     return res.status(200).json(terapeutas);
   } catch (err) {
     console.log(err);
     return res.status(500).json("Ha ocurrido un error");
   }
 });
+
+/**
+ * @swagger
+ * /usuarios/fisioterapeutas/horario/{id_terapeuta}:
+ *  get:
+ *    summary: Permite obtener el horario de un fisioterapeuta
+ *    tags: [Fisioterapeuta]
+ *    responses:
+ *      "200":
+ *        description: Devuelve un objeto con el horario del terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                horario:
+ *                  type: array
+ *                  items:
+ *                    type: object
+ *                    $ref: '#/components/schemas/Horario'
+ *      "500":
+ *        description: Devuelve un mensaje indicando que algo salio mal
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "404":
+ *        description: Devuelve un mensaje indicando que no se encontro el terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *    parameters:
+ *        - in: path
+ *          description: id del terapeuta
+ *          name: id_terapeuta
+ *          schema:
+ *            type: string
+ *
+ *
+ *
+ */
+router.get(
+  "/horario/:id_terapeuta",
+  existeTerapeuta,
+  verHorario,
+  (req, res, next) => {
+    res.status(200).json(res.body);
+  }
+);
 
 module.exports = router;
