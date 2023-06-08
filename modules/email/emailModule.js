@@ -1,6 +1,6 @@
 const { transporter } = require("../../setup/nodemailer");
 const nodemailer = require("nodemailer");
-let sender = "kbocchi.email.system@gmail.com";
+let sender = process.env.EMAIL_SYSTEM_USER;
 async function enviarEmail(html,emailTo,subject) {
   let info = await transporter.sendMail({
     from: `"Kbocchi team 👨‍👨‍👧‍👦" <${sender}>`,
