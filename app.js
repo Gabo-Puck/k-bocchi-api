@@ -15,7 +15,7 @@ var fileUpload = require("express-fileupload");
 var { knex } = require("./setup/knexfile");
 
 var { Model } = require("objection");
-console.log(process.env.TZ);
+
 Model.knex(knex);
 const swaggerUI = require("swagger-ui-express");
 const swaggerJSDOC = require("swagger-jsdoc");

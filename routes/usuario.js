@@ -66,7 +66,8 @@ const {
  *        required: true
  */
 router.get("/datos/:uid", async (req, res, next) => {
-  console.log(req.body);
+  // console.log(req.body);
+  console.log(process.env.TZ);
   let usuario = await Usuario.query().findById(req.params.uid);
   if (!usuario) {
     return res
