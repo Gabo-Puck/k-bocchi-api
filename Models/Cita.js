@@ -1,5 +1,6 @@
 const { Model } = require("objection");
 const Terapeuta = require("./Terapeuta");
+const { formatearFechaMx } = require("../utils/formatearFecha");
 class Cita extends Model {
   static get tableName() {
     return "citas";
@@ -9,7 +10,7 @@ class Cita extends Model {
     
     json = super.$parseDatabaseJson(json);
     let date = new Date(json.fecha)
-    console.log(date);
+    formatearFechaMx(date);
     // Do your conversion here.
     return json;
   }
