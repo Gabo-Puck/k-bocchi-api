@@ -277,14 +277,10 @@ router.post(
     res.emailContent = {
       usuario: usuario.nombre,
     };
-    if (usuario.paciente)
-      res.emailContent = {
-        usuario: usuario.paciente.nombre,
-      };
-    else
-      res.emailContent = {
-        usuario: usuario.terapeuta.nombre,
-      };
+    res.emailContent = {
+      usuario: usuario.nombre,
+    };
+
     let fechaExpiracion = Date.now() + 600000; //Sumale 600000 milisegs / 10 minutos
     let stringEncoded = encriptar(`${fechaExpiracion}/${usuario.id}`);
     console.log(req.headers.host);
