@@ -40,7 +40,6 @@ function initServer(httpServer) {
       socket.emit("usuario:lista", [...connectedUsers]);
       // connectedUsers.add(`${socket.data.id}|${socket.data.nombre}`);
       addUsuarioConectado({ ...socket.data });
-      socket.broadcast.emit("usuario:conectado", { ...socket.data });
 
       console.log(
         `CONECTADO:\n\rSOCKET_ID: ${socket.id}\n\rSOCKET_UID(ID_USUARIO):${socket.data.id}`
@@ -48,7 +47,9 @@ function initServer(httpServer) {
       console.log("\n\rUSUARIOS CONECTADOS: \n\r", connectedUsers);
       socket.join(id);
     });
-
+    socket.on("chat:entrar", async () => {
+      socket.broadcast.emit("usuario:conectado", { ...socket.data });
+    });
     socket.on("mensajes:enviar", async ({ to, contenido }) => {
       //hacer algo para guardar mensaje
       //enviarlo al destinatario
