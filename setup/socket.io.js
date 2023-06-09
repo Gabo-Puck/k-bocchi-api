@@ -70,6 +70,7 @@ function initServer(httpServer) {
       //   if (user.id === socket.data.id) connectedUsers.delete(user);
       // });
       removeUsuario({ ...socket.data });
+      socket.broadcast.emit("usuario:desconectado", { ...socket.data });
       console.log("\n\rUSUARIOS CONECTADOS: \n\r", connectedUsers);
       console.log(sockets);
     });
