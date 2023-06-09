@@ -1,6 +1,7 @@
 const { Cita } = require("../Models/Cita");
 const date = require("date-and-time");
-// const patternFecha = date.compile("YYYY-MM-DD"); //Formateador que permite convertir un objeto Date a un string con el formato indicado de fecha
+const { obtenerFechaActualMexico, patternFecha } = require("../utils/fechas");
+// const patternFecha2 = date.compile("YYYY-MM-DD HH:mm:ss"); //Formateador que permite convertir un objeto Date a un string con el formato indicado de fecha
 
 exports.crearCita = async (req, res, next) => {
   try {
@@ -61,24 +62,57 @@ exports.verTodasCitas = async (req, res, next) => {
   }
 };
 
+exports.obtenerCitasFechasExcluyente = async (id_terapeuta, fecha) => {
+  try {
+    let citas = await Cita.query()
+      .where("id_terapeuta", "=", id_terapeuta)
+      .modify((builder) => {
+        let fechaInicio = date.parse(fecha, patternFecha);
+        if (fecha && !isNaN(fechaInicio)) {
+          let fechaLimite = date.addDays(fechaInicio, 1);
+          let fechaInicioFormateada = date.format(fechaInicio, patternFecha);
+          let FechaFinalFormateada = date.format(fechaLimite, patternFecha);
+          let fechaActual = date.addDays(obtenerFechaActualMexico(), 1);
+          let fechaActualFormateada = date.format(
+            fechaActual,
+            patternFecha,
+            true
+          );
+          // console.log(new Date(Date.now()).toLocaleString());
+          builder
+            .andWhere("fecha", ">=", fechaActualFormateada)
+            .andWhere("fecha", "<", fechaInicioFormateada)
+            .orWhere("fecha", ">=", FechaFinalFormateada);
+        }
+      })
+      .orderBy("fecha", "DESC")
+      .debug();
+    return citas;
+  } catch (err) {
+    console.log(err);
+    throw new Error(err);
+  }
+};
+
 exports.verCitasTerapeuta = async (req, res, next) => {
   try {
     let { id_terapeuta } = req.params;
     let { fecha } = req.query;
     let citas = await Cita.query()
       .where("id_terapeuta", "=", id_terapeuta)
-      // .modify((builder) => {
-      //   // let fechaInicio = date.parse(fecha,patternFecha);
-      //   // if (fecha && !isNaN(fechaInicio)) {
-      //     // let fechaLimite = date.addDays(fechaInicio, 1);
-      //     // let fecha1 = date.format(fechaInicio,patternFecha);
-      //     // let fecha2 = date.format(fechaLimite,patternFecha);
-      //     builder
-      //       .andWhere("fecha", ">=", "2023-06-20")
-      //       .andWhere("fecha", "<", "2023-06-21");
-      //   // }
-      // })
-      // .orderBy("fecha", "DESC").debug();
+      .modify((builder) => {
+        let fechaInicio = date.parse(fecha || "", patternFecha);
+        if (fecha && !isNaN(fechaInicio)) {
+          let fechaLimite = date.addDays(fechaInicio, 1);
+          let fecha1 = date.format(fechaInicio, patternFecha);
+          let fecha2 = date.format(fechaLimite, patternFecha);
+          builder
+            .andWhere("fecha", ">=", fecha1)
+            .andWhere("fecha", "<", fecha2);
+        }
+      })
+      .orderBy("fecha", "DESC");
+    // .debug();
     res.body = { ...res.body, citas };
     next();
   } catch (err) {

@@ -1,14 +1,14 @@
 const { getDiaFromFecha } = require("../utils/algoritmo_cita/getDiaFromFecha");
-// const { horario } = require("./test_horario.json")[0];
-// const citas = require("./test_citas.json");
 const date = require("date-and-time");
+const { obtenerCitasFechasExcluyente } = require("./Citas");
+const { obtenerFechaActualMexico, patternFecha } = require("../utils/fechas");
 
-
+const duracionCita = 60; //minutos
 /**
  * Esta función permite revisar si una fecha esta dentro de los días hábiles de un fisioterapeuta
  * @param {*} horario_terapeuta Es el horario del terapeuta
  * @param {*} fecha Es la fecha la cual se va a revisar
- * @returns Una promesa que: se resuelve con el día del horario del terapeuta obtenido o que se rechaza si es que la fecha provista no esta disponible para citas.
+ * @returns {Promise<any|{razon:string}>} Una promesa que: se resuelve con el día del horario del terapeuta obtenido o que se rechaza si es que la fecha provista no esta disponible para citas.
  */
 const checkDentroHorario = (horario_terapeuta, fecha) => {
   return new Promise((resolve, reject) => {
@@ -24,13 +24,12 @@ const checkDentroHorario = (horario_terapeuta, fecha) => {
     reject({ razon: "Este día no trabaja el fisioterapeuta" });
   });
 };
-exports.checkDentroHorario = checkDentroHorario;
-let duracionCita = 30; //minutos
+
 /**
  * Esta función permite obtener
  * @param {*} horario_dia Es un día del horario de un fisioterapeuta
  * @param {*} citas Es el arreglo de citas correspondientes al día horario_dia
- * @returns Una promesa, que se resuelve correctamente si hay posibilidad de agendar una cita ese día y que se rechaza si no hay cupo
+ * @returns {Promise<string|{razon:string}>} Una promesa, que se resuelve correctamente si hay posibilidad de agendar una cita ese día y que se rechaza si no hay cupo
  */
 const checkCitasDisponibles = (horario_dia, citas) => {
   return new Promise((resolve, reject) => {
@@ -42,7 +41,7 @@ const checkCitasDisponibles = (horario_dia, citas) => {
     let citasPosibles = calcularCitasPosibles(hF, hI);
     console.log(`Citas posibles el ${horario_dia.dia}: ${citasPosibles}`);
     console.log(`# Citas actuales:  ${citas.length}`);
-    if (citas.length === citasPosibles) {
+    if (citas.length >= citasPosibles) {
       console.log("No hay cupo");
       reject({ razon: "No hay cupo este día" });
     }
@@ -54,7 +53,6 @@ const checkCitasDisponibles = (horario_dia, citas) => {
   });
 };
 
-// console.log(horario);
 async function call() {
   let fecha = "2023-06-05";
   try {
@@ -69,7 +67,7 @@ async function call() {
  *
  * @param {*} hF Es un objeto Date que indica la hora a la que termina de laborar un fisioterapeuta en un determinado día
  * @param {*} hI Es un objeto Date que indica la hora a la que inicia labores un fisioterapeuta
- * @returns Un entero indicando cuantas citas se pueden agendar un determinado día de su horario.
+ * @returns {Integer} Un entero indicando cuantas citas se pueden agendar un determinado día de su horario.
  */
 function calcularCitasPosibles(hF, hI) {
   /**
@@ -79,9 +77,14 @@ function calcularCitasPosibles(hF, hI) {
   return Math.floor(date.subtract(hF, hI).toMinutes()) / duracionCita;
 }
 
-//Esta función permite obtener los horarios posibles de un arreglo de citas
-
-async function obtenerHorariosDisponibles(horario_dia, citas, fecha) {
+/**
+ * Esta función permite obtener los horarios posibles de un arreglo de citas
+ * @param {*} horario_dia Es el objeto que contiene un objeto que representa un día del horario del terapeuta
+ * @param {*} citas Es un array que contiene las citas asociadas a la fecha y el horario_dia
+ * @param {*} fecha La fecha en la que se desea obtener los horarios disponibles
+ * @returns {Array<{horario_formatted:string,fecha:Date}} Un objeto que contiene los horarios disponibles
+ */
+function obtenerHorariosDisponibles(horario_dia, citas, fecha) {
   //se obtiene las horas de inicio y final laboral del día elegido
   let { hora_inicio, hora_fin } = horario_dia;
   //Se generan objetos Date para poder trabajar con la libreria date-and-time
@@ -147,7 +150,77 @@ async function obtenerHorariosDisponibles(horario_dia, citas, fecha) {
     hora_acc = date.addMinutes(hora_acc, duracionCita);
   }
   console.log(horariosDisponibles);
+  return horariosDisponibles;
 }
-// console.log(citas);
-// call();
 
+async function buscarFechasDisponibles(id_terapeuta, horario, fecha) {
+  let citas_excluidas = await obtenerCitasFechasExcluyente(id_terapeuta, fecha);
+  fecha = date.parse(fecha, patternFecha);
+  let fecha_anterior = date.addDays(fecha, -1);
+  let fecha_actual = obtenerFechaActualMexico();
+  let fechas_disponibles_encontradas = 0;
+  let fechas_disponibles = [];
+  while (
+    !date.isSameDay(fecha_anterior, fecha_actual) &&
+    fechas_disponibles_encontradas < 2
+  ) {
+    fecha_anterior;
+    citas = [];
+    citas_excluidas.find((cita) => {
+      if (date.isSameDay(cita.fecha, fecha_anterior)) {
+        citas.push(cita);
+      }
+    });
+    let horario_seleccionado;
+    try {
+      horario_seleccionado = await checkDentroHorario(horario, fecha_anterior);
+      await checkCitasDisponibles(horario_seleccionado, citas);
+      // let horarios_disponibles = obtenerHorariosDisponibles(
+      //   horario_seleccionado,
+      //   citas,
+      //   fecha_anterior
+      // );
+      console.log(`${fecha_anterior} aplica como día disponible`);
+      fechas_disponibles.push(fecha_anterior);
+      fechas_disponibles_encontradas++;
+    } catch (err) {
+      console.log(`${fecha_anterior} no aplica como dia disponible`);
+    }
+    fecha_anterior = date.addDays(fecha_anterior, -1);
+  }
+  console.log("object");
+  let fecha_siguiente = date.addDays(fecha, 1);
+  while (fechas_disponibles_encontradas < 4) {
+    fecha_siguiente;
+    citas = [];
+    citas_excluidas.find((cita) => {
+      if (date.isSameDay(cita.fecha, fecha_siguiente)) {
+        citas.push(cita);
+      }
+    });
+    let horario_seleccionado;
+    try {
+      horario_seleccionado = await checkDentroHorario(horario, fecha_siguiente);
+      await checkCitasDisponibles(horario_seleccionado, citas);
+      // let horarios_disponibles = obtenerHorariosDisponibles(
+      //   horario_seleccionado,
+      //   citas,
+      //   fecha_anterior
+      // );
+      console.log(`${fecha_siguiente} aplica como día disponible`);
+      fechas_disponibles.push(fecha_siguiente);
+      fechas_disponibles_encontradas++;
+    } catch (err) {
+      console.log(`${fecha_siguiente} no aplica como dia disponible`);
+    }
+    fecha_siguiente = date.addDays(fecha_siguiente, 1);
+  }
+  return fechas_disponibles;
+}
+
+module.exports = {
+  checkDentroHorario,
+  checkCitasDisponibles,
+  obtenerHorariosDisponibles,
+  buscarFechasDisponibles,
+};

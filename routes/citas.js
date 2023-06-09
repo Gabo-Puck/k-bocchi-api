@@ -5,10 +5,17 @@ const {
   verCita,
   verTodasCitas,
   verCitasTerapeuta,
+  obtenerCitasFechasExcluyente,
 } = require("../Controllers/Citas");
 const express = require("express");
 const { verHorario } = require("../Controllers/Horario");
 const { existeTerapeuta } = require("../Controllers/Terapeuta");
+const {
+  obtenerHorariosDisponibles,
+  checkCitasDisponibles,
+  checkDentroHorario,
+  buscarFechasDisponibles,
+} = require("../Controllers/AlgoritmoCitas");
 var router = express.Router();
 
 /**
@@ -221,7 +228,7 @@ router.get("/", verTodasCitas);
 
 /**
  * @swagger
- * /citas/validarFecha/{id_terapeuta}/{fecha}:
+ * /citas/validarFecha/{id_terapeuta}:
  *  get:
  *    summary: Permite validar si la fecha ingresada esta disponible
  *    tags: [Citas]
@@ -258,23 +265,45 @@ router.get("/", verTodasCitas);
  *               type: string
  *    parameters:
  *      - in: path
+ *        name: id_terapeuta
+ *        required: true
+ *        schema:
+ *          type: integer
+ *      - in: query
  *        name: fecha
  *        required: true
  *        schema:
  *          type: string
  *          format: date
- *      - in: path
- *        name: id_terapeuta
- *        required: true
- *        schema:
- *          type: integer
  *
  */
 router.get(
-  "/validarFecha/:id_terapeuta/:fecha",
+  "/validarFecha/:id_terapeuta",
   existeTerapeuta,
   verHorario,
-  async (req, res, next) => {}
+  verCitasTerapeuta,
+  async (req, res, next) => {
+    let { fecha } = req.query;
+    let { horario, citas } = res.body;
+    let horario_seleccionado;
+    let { id_terapeuta } = req.params;
+    try {
+      horario_seleccionado = await checkDentroHorario(horario, fecha);
+      await checkCitasDisponibles(horario_seleccionado, citas);
+      let horarios_disponibles = obtenerHorariosDisponibles(
+        horario_seleccionado,
+        citas,
+        fecha
+      );
+      res.status(200).json({ horarios_disponibles });
+    } catch (err) {
+      if(err.razon){
+        let diasDisponibles = await buscarFechasDisponibles(id_terapeuta,horario, fecha);
+        return res.status(400).json(diasDisponibles);
+      }
+      res.status(200).json("error");
+    }
+  }
 );
 
 /**

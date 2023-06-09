@@ -4,6 +4,7 @@ const { v4: uuidv4, v4 } = require("uuid");
 const { encriptar, desencriptar } = require("../utils/encryption");
 var router = express.Router();
 var terapeutas = require("./terapeuta");
+const date = require("date-and-time");
 const {
   enviarEmailPrueba,
   renderEmailMiddleware,
@@ -68,6 +69,9 @@ const {
 router.get("/datos/:uid", async (req, res, next) => {
   // console.log(req.body);
   console.log(process.env.TZ);
+  let x=date.parse("11:14:05", "hh:mm:ss"); // => Jan 1 1970 23:14:05 GMT-0800
+  let x1=date.parse("11:14:05", "hh:mm:ss", true); // => Jan 1 1970 23:14:05 GMT+0000 (Jan 1 1970 15:14:05 GMT-0800)
+  console.log(x,x1);
   let usuario = await Usuario.query().findById(req.params.uid);
   if (!usuario) {
     return res

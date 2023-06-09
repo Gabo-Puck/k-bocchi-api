@@ -10,6 +10,8 @@ let days = {
 exports.getDiaFromFecha = (f) => {
   let fecha = new Date(f);
   let dia = fecha.getUTCDay();
+  // let dia2 = fecha.getDay();
   // console.log(`${dia}-${days[dia]}`)
+  // console.log("POPO: ",dia,dia2);
   return days[dia];
 };

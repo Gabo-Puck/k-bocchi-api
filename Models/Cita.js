@@ -1,17 +1,18 @@
 const { Model } = require("objection");
 const Terapeuta = require("./Terapeuta");
 const { formatearFechaMx } = require("../utils/formatearFecha");
+const date = require("date-and-time");
 class Cita extends Model {
   static get tableName() {
     return "citas";
   }
   $parseDatabaseJson(json) {
     // Remember to call the super class's implementation.
-    
+
     json = super.$parseDatabaseJson(json);
-    let date = new Date(json.fecha)
-    formatearFechaMx(date);
+
     // Do your conversion here.
+    // console.log(x,x1);
     return json;
   }
   static relationMappings() {

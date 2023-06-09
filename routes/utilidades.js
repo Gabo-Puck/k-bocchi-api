@@ -473,4 +473,13 @@ function generarTerapeutas(cantidad) {
   });
   return usuarios;
 }
+
+function generarCitas(cantidad){
+  
+  for (let index = 0; index < cantidad; index++) {
+    
+    
+  }
+  return citas
+}
 module.exports = router;

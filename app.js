@@ -15,7 +15,6 @@ var fileUpload = require("express-fileupload");
 var { knex } = require("./setup/knexfile");
 
 var { Model } = require("objection");
-
 Model.knex(knex);
 const swaggerUI = require("swagger-ui-express");
 const swaggerJSDOC = require("swagger-jsdoc");
@@ -39,7 +38,6 @@ const { validateCedula } = require("./modules/vision/cloudVision");
 
 
 
-
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
@@ -57,7 +55,7 @@ app.use(cors());
 app.use("/utilidades", utilidadesRouter);
 app.use("/usuarios", usuario);
 app.use("/docs", swaggerUI.serve, swaggerUI.setup(swaggerJSDOC(swaggerSpec)));
-app.use("/citas",citasRouter)
+app.use("/citas", citasRouter);
 app.use("/", indexRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
