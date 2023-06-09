@@ -1,11 +1,19 @@
 const { Server } = require("socket.io");
-const connectedUsers = new Set();
+let connectedUsers = [];
+const addUsuarioConectado = (usuario) => {
+  let x = connectedUsers.find((u) => usuario.id == u.id);
+  if (!x) connectedUsers.push(usuario);
+};
+const removeUsuario = (usuario) => {
+  let u = connectedUsers.filter((u) => usuario.id != u.id);
+  connectedUsers = [...u];
+};
 function initServer(httpServer) {
   // console.log(httpServer);
   const io = new Server(httpServer, {
     cors: {
-      origin: "*"
-      },
+      origin: "*",
+    },
   });
   io.of("/").adapter.on("create-room", (room) => {
     console.log(`\n\rLa sala ${room} fue creada\n\r`);
@@ -29,32 +37,40 @@ function initServer(httpServer) {
         id,
         nombre,
       };
-      connectedUsers.add(`${socket.data.id}|${socket.data.nombre}`);
+      socket.emit("usuario:lista", [...connectedUsers]);
+      // connectedUsers.add(`${socket.data.id}|${socket.data.nombre}`);
+      addUsuarioConectado({ ...socket.data });
+      socket.broadcast.emit("usuario:conectado", { ...socket.data });
+
       console.log(
         `CONECTADO:\n\rSOCKET_ID: ${socket.id}\n\rSOCKET_UID(ID_USUARIO):${socket.data.id}`
       );
-      console.log("\n\rUSUARIOS CONECTADOS: \n\r", connectedUsers.values());
+      console.log("\n\rUSUARIOS CONECTADOS: \n\r", connectedUsers);
       socket.join(id);
     });
 
     socket.on("mensajes:enviar", async ({ to, contenido }) => {
       //hacer algo para guardar mensaje
       //enviarlo al destinatario
-      let fecha = new Date(Date.now()).toISOString().slice(0, 19).replace("T", " ");
+      let fecha = new Date(Date.now())
+        .toISOString()
+        .slice(0, 19)
+        .replace("T", " ");
       io.to(to).emit("mensajes:recibido", {
         nombre: socket.data.nombre,
         from: socket.data.id,
         contenido,
-        fecha
+        fecha,
       });
     });
 
     socket.on("disconnecting", async () => {
       let sockets = await io.in("room").fetchSockets();
-      connectedUsers.forEach((user) => {
-        if (user.id === socket.data.id) connectedUsers.delete(user);
-      });
-      console.log("\n\rUSUARIOS CONECTADOS: \n\r", connectedUsers.values());
+      // connectedUsers.forEach((user) => {
+      //   if (user.id === socket.data.id) connectedUsers.delete(user);
+      // });
+      removeUsuario({ ...socket.data });
+      console.log("\n\rUSUARIOS CONECTADOS: \n\r", connectedUsers);
       console.log(sockets);
     });
   });
