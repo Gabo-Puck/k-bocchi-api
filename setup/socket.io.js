@@ -37,22 +37,23 @@ function initServer(httpServer) {
         id,
         nombre,
       };
-      socket.emit("usuario:lista", [...connectedUsers]);
       // connectedUsers.add(`${socket.data.id}|${socket.data.nombre}`);
       addUsuarioConectado({ ...socket.data });
-
+      
       console.log(
         `CONECTADO:\n\rSOCKET_ID: ${socket.id}\n\rSOCKET_UID(ID_USUARIO):${socket.data.id}`
-      );
+        );
+      socket.broadcast.emit("usuario:conectado", { ...socket.data });
       console.log("\n\rUSUARIOS CONECTADOS: \n\r", connectedUsers);
       socket.join(id);
     });
     socket.on("chat:entrar", async () => {
-      socket.broadcast.emit("usuario:conectado", { ...socket.data });
+      socket.emit("usuario:lista", [...connectedUsers]);
     });
     socket.on("mensajes:enviar", async ({ to, contenido }) => {
       //hacer algo para guardar mensaje
       //enviarlo al destinatario
+      console.log({to,contenido});
       let fecha = new Date(Date.now())
         .toISOString()
         .slice(0, 19)
