@@ -1,7 +1,7 @@
 const { getDiaFromFecha } = require("../utils/algoritmo_cita/getDiaFromFecha");
 const date = require("date-and-time");
 const { obtenerCitasFechasExcluyente } = require("./Citas");
-const { obtenerFechaActualMexico, patternFecha } = require("../utils/fechas");
+const { obtenerFechaActualMexico, patternFecha, obtenerFechaComponent } = require("../utils/fechas");
 
 const duracionCita = 60; //minutos
 /**
@@ -155,14 +155,19 @@ function obtenerHorariosDisponibles(horario_dia, citas, fecha) {
 
 async function buscarFechasDisponibles(id_terapeuta, horario, fecha) {
   let citas_excluidas = await obtenerCitasFechasExcluyente(id_terapeuta, fecha);
+  console.log({ citas_excluidas });
   fecha = date.parse(fecha, patternFecha);
+  let fecha_actual = date.parse(obtenerFechaComponent(), patternFecha);
+  if (fecha <= fecha_actual) {
+    fecha = date.addDays(fecha_actual, 1);
+  }
   let fecha_anterior = date.addDays(fecha, -1);
-  let fecha_actual = obtenerFechaActualMexico();
   let fechas_disponibles_encontradas = 0;
   let fechas_disponibles = [];
   while (
     !date.isSameDay(fecha_anterior, fecha_actual) &&
-    fechas_disponibles_encontradas < 2
+    fechas_disponibles_encontradas < 2 &&
+    !date.isSameDay(fecha, fecha_actual)
   ) {
     fecha_anterior;
     citas = [];
