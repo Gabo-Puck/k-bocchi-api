@@ -1,7 +1,11 @@
 const { getDiaFromFecha } = require("../utils/algoritmo_cita/getDiaFromFecha");
 const date = require("date-and-time");
 const { obtenerCitasFechasExcluyente } = require("./Citas");
-const { obtenerFechaActualMexico, patternFecha, obtenerFechaComponent } = require("../utils/fechas");
+const {
+  obtenerFechaActualMexico,
+  patternFecha,
+  obtenerFechaComponent,
+} = require("../utils/fechas");
 
 const duracionCita = 60; //minutos
 /**
@@ -50,6 +54,20 @@ const checkCitasDisponibles = (horario_dia, citas) => {
       //muestra las horas posibles
       resolve("Citas disponibles");
     }
+  });
+};
+
+const checkFechaPosterior = (fecha) => {
+  return new Promise((resolve, reject) => {
+    if (
+      date.parse(fecha, patternFecha) <=
+      date.parse(obtenerFechaComponent(), patternFecha)
+    ) {
+      reject({ razon: "La fecha ingresada es hoy o anterior a hoy" });
+    }else{
+      resolve("Fecha posterior");
+    }
+
   });
 };
 
@@ -228,4 +246,5 @@ module.exports = {
   checkCitasDisponibles,
   obtenerHorariosDisponibles,
   buscarFechasDisponibles,
+  checkFechaPosterior
 };
