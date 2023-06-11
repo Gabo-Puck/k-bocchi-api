@@ -15,7 +15,10 @@ const {
   checkCitasDisponibles,
   checkDentroHorario,
   buscarFechasDisponibles,
+  checkFechaPosterior,
 } = require("../Controllers/AlgoritmoCitas");
+const date = require("date-and-time");
+const { patternFecha, obtenerFechaComponent } = require("../utils/fechas");
 var router = express.Router();
 
 /**
@@ -242,7 +245,7 @@ router.get("/", verTodasCitas);
  *              items:
  *                  type: string
  *                  example: "20:00:00"
- *      "400":
+ *      "420":
  *        description: Devuelve fechas cercanas para agendar una cita
  *        content:
  *          application/json:
@@ -251,6 +254,12 @@ router.get("/", verTodasCitas);
  *              items:
  *                  type: string
  *                  format: date
+ *      "400":
+ *        description: Devuelve un mensaje indicando que la fecha esta en un formato incorrecto
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
  *      "404":
  *        description: Devuelve un mensaje indicando que no existe el terapeuta
  *        content:
@@ -287,22 +296,31 @@ router.get(
     let { horario, citas } = res.body;
     let horario_seleccionado;
     let { id_terapeuta } = req.params;
+    if (!date.isValid(fecha, patternFecha)||!/\d{4}-\d{2}-\d{2}/g.test(fecha)) {
+      return res.status(400).json("La fecha esta en un formato incorrecto");
+    }
+
     try {
       horario_seleccionado = await checkDentroHorario(horario, fecha);
+      await checkFechaPosterior(fecha);
       await checkCitasDisponibles(horario_seleccionado, citas);
       let horarios_disponibles = obtenerHorariosDisponibles(
         horario_seleccionado,
         citas,
         fecha
       );
-      res.status(200).json({ horarios_disponibles });
+      return res.status(200).json({ horarios_disponibles });
     } catch (err) {
-      if(err.razon){
-        let diasDisponibles = await buscarFechasDisponibles(id_terapeuta,horario, fecha);
-        return res.status(400).json(diasDisponibles);
+      if (err.razon) {
+        let diasDisponibles = await buscarFechasDisponibles(
+          id_terapeuta,
+          horario,
+          fecha
+        );
+        return res.status(420).json(diasDisponibles);
       }
-      res.status(200).json("error");
     }
+    return res.status(500).json(err);
   }
 );
 
