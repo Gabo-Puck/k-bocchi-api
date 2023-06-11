@@ -366,6 +366,51 @@ router.delete("/deleteDummyTerapeutas", async (req, res, next) => {
   }
 });
 
+/**
+ * @swagger
+ * /utilidades/calcularDistancia:
+ *  get:
+ *    summary: Ruta que permite calcular la distancia entre dos coordenabas A(lat,lng) - B(lat,lng)
+ *    tags: [Utilidades]
+ *    responses:
+ *      200:
+ *        description: Devuelve un mensaje indicando la distancia
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: number
+ *    parameters:
+ *      - in: query
+ *        name: latA
+ *        required: true
+ *        description: Latitud de la coordenada A
+ *        schema:
+ *          type: number
+ *      - in: query
+ *        name: lngA
+ *        required: true
+ *        description: Longitud de la coordenada A
+ *        schema:
+ *          type: number
+ *      - in: query
+ *        name: latB
+ *        required: true
+ *        description: Latitud de la coordenada B
+ *        schema:
+ *          type: number
+ *      - in: query
+ *        name: lngB
+ *        required: true
+ *        description: Longitud de la coordenada B
+ *        schema:
+ *          type: number
+ */
+router.get("/calcularDistancia", async (req, res, next) => {
+  let {latA,lngA,latB,lngB} = req.query;
+  let d = calcularDistancia(latA,lngA,latB,lngB);
+  return res.status(200).json(d);
+});
+
 function generarPacientes(cantidad, rol) {
   let usuarios = generarUsuarios(cantidad, ROLES.PACIENTE);
   return usuarios.map((usuario) => {
@@ -474,12 +519,30 @@ function generarTerapeutas(cantidad) {
   return usuarios;
 }
 
-function generarCitas(cantidad){
-  
-  for (let index = 0; index < cantidad; index++) {
-    
-    
+function generarCitas(cantidad) {
+  for (let index = 0; index < cantidad; index++) {}
+  return citas;
+}
+
+function calcularDistancia(latA, lngA, latB, lngB) {
+  if (latA == latB && lngA == lngB) {
+    return 0;
+  } else {
+    let radlat1 = (Math.PI * latA) / 180;
+    let radlat2 = (Math.PI * latB) / 180;
+    let theta = lngA - lngB;
+    let radtheta = (Math.PI * theta) / 180;
+    let dist =
+      Math.sin(radlat1) * Math.sin(radlat2) +
+      Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+    if (dist > 1) {
+      dist = 1;
+    }
+    dist = Math.acos(dist);
+    dist = (dist * 180) / Math.PI;
+    dist = dist * 60 * 1.1515;
+    dist = dist * 1.609344; //Convertir a km
+    return dist;
   }
-  return citas
 }
 module.exports = router;
