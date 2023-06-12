@@ -17,6 +17,7 @@ const Resena = require("../Models/Resenas");
 const consultorio = require("../dummyData/consultorio.json");
 const nombres = require("../dummyData/nombres.json");
 const horarios = require("../dummyData/horarios.json");
+const { calcularDistancia } = require("../utils/geo");
 
 /**
  * @swagger
@@ -406,8 +407,8 @@ router.delete("/deleteDummyTerapeutas", async (req, res, next) => {
  *          type: number
  */
 router.get("/calcularDistancia", async (req, res, next) => {
-  let {latA,lngA,latB,lngB} = req.query;
-  let d = calcularDistancia(latA,lngA,latB,lngB);
+  let { latA, lngA, latB, lngB } = req.query;
+  let d = calcularDistancia(latA, lngA, latB, lngB);
   return res.status(200).json(d);
 });
 
@@ -524,25 +525,4 @@ function generarCitas(cantidad) {
   return citas;
 }
 
-function calcularDistancia(latA, lngA, latB, lngB) {
-  if (latA == latB && lngA == lngB) {
-    return 0;
-  } else {
-    let radlat1 = (Math.PI * latA) / 180;
-    let radlat2 = (Math.PI * latB) / 180;
-    let theta = lngA - lngB;
-    let radtheta = (Math.PI * theta) / 180;
-    let dist =
-      Math.sin(radlat1) * Math.sin(radlat2) +
-      Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
-    if (dist > 1) {
-      dist = 1;
-    }
-    dist = Math.acos(dist);
-    dist = (dist * 180) / Math.PI;
-    dist = dist * 60 * 1.1515;
-    dist = dist * 1.609344; //Convertir a km
-    return dist;
-  }
-}
 module.exports = router;

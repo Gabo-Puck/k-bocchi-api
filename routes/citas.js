@@ -9,7 +9,10 @@ const {
 } = require("../Controllers/Citas");
 const express = require("express");
 const { verHorario } = require("../Controllers/Horario");
-const { existeTerapeuta } = require("../Controllers/Terapeuta");
+const {
+  existeTerapeuta,
+  verTerapeutaDetalles,
+} = require("../Controllers/Terapeuta");
 const {
   obtenerHorariosDisponibles,
   checkCitasDisponibles,
@@ -19,6 +22,8 @@ const {
 } = require("../Controllers/AlgoritmoCitas");
 const date = require("date-and-time");
 const { patternFecha, obtenerFechaComponent } = require("../utils/fechas");
+const Terapeuta = require("../Models/Terapeuta");
+const { calcularDistancia } = require("../utils/geo");
 var router = express.Router();
 
 /**
@@ -296,7 +301,10 @@ router.get(
     let { horario, citas } = res.body;
     let horario_seleccionado;
     let { id_terapeuta } = req.params;
-    if (!date.isValid(fecha, patternFecha)||!/\d{4}-\d{2}-\d{2}/g.test(fecha)) {
+    if (
+      !date.isValid(fecha, patternFecha) ||
+      !/\d{4}-\d{2}-\d{2}/g.test(fecha)
+    ) {
       return res.status(400).json("La fecha esta en un formato incorrecto");
     }
 
@@ -376,5 +384,71 @@ router.get(
     res.status(200).json(res.body);
   }
 );
+
+/**
+ * @swagger
+ * /citas/validarDomicilio/{id_terapeuta}:
+ *  get:
+ *    summary: Permite validar su un domicilio esta dentro de el rango de atención de un terapeuta
+ *    tags: [Citas]
+ *    responses:
+ *      "200":
+ *        description: Devuelve las citas de un terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                  type: object
+ *                  $ref: '#/components/schemas/Cita'
+ *      "404":
+ *        description: Devuelve un mensaje indicando que no existe el terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *    parameters:
+ *      - in: query
+ *        name: latA
+ *        required: true
+ *        description: Latitud de la coordenada A
+ *        schema:
+ *          type: number
+ *      - in: query
+ *        name: lngA
+ *        required: true
+ *        description: Longitud de la coordenada A
+ *        schema:
+ *          type: number
+ *      - in: path
+ *        name: id_terapeuta
+ *        required: true
+ *        description: ID del terapeuta para validar el domicilio ingresado
+ */
+router.get("/validarDomicilio/:id_terapeuta", async (req, res, next) => {
+  let { id_terapeuta } = req.params;
+  let { latA, lngA } = req.query;
+  try {
+    let terapeuta = await Terapeuta.query().findById(id_terapeuta);
+    if (!terapeuta) return res.status(404).json("No se encontro el terapeuta");
+    let { rango_servicio, lat: latB, lng: lngB } = terapeuta;
+    let distancia = calcularDistancia(latA, lngA, latB, lngB);
+    if (distancia > rango_servicio) {
+      return res
+        .status(400)
+        .json("Este domicilio esta fuera del rango de servicio del terapeuta");
+    }
+    return res.status(200).json(distancia);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+});
 
 module.exports = router;
