@@ -5,6 +5,8 @@ const {
   obtenerFechaActualMexico,
   patternFecha,
   obtenerFechaComponent,
+  patternHora,
+  patternFechaCompleta,
 } = require("../utils/fechas");
 
 const duracionCita = 60; //minutos
@@ -64,10 +66,9 @@ const checkFechaPosterior = (fecha) => {
       date.parse(obtenerFechaComponent(), patternFecha)
     ) {
       reject({ razon: "La fecha ingresada es hoy o anterior a hoy" });
-    }else{
+    } else {
       resolve("Fecha posterior");
     }
-
   });
 };
 
@@ -113,43 +114,18 @@ function obtenerHorariosDisponibles(horario_dia, citas, fecha) {
   let i = 1;
   //Se inicializa un objeto tipo Date para iterar sobre las fechas posibles
   let hora_acc = new Date(hI);
-  //Se crean objetos para poder formatear los horarios apropiadamanete
-  const patternHoras = date.compile("HH:mm:ss"); //Formateador que permite convertir un objeto Date a un string con el formato indicado de horas
-  const patternFecha = date.compile("YYYY-MM-DD HH:mm:ss"); //Formateador que permite convertir un objeto Date a un string con el formato indicado de fecha
   let horariosDisponibles = [];
   //Se itera sobre las posibles citas que puede haber en el día
   while (i <= numeroCitas) {
     //Mediante el método "find" revisamos si hay una cita que inicie en la hora que tenga el objeto "hora_acc"
-    let citaEncontrada = citas.find((cita) => {
-      //Se obtiene un string en el formato HH:mm:ss mediante el formateador creado previamente
-      let dateString1 = date.format(hora_acc, patternHoras);
-      //Se crea un objeto tipo Date, lo convertimos a string y obtenemos su parte que indica el tiempo
-      let fechaCita = new Date(cita.fecha)
-        .toISOString()
-        .split("T")[1]
-        .substring(0, 8);
-      /**
-       * Se usa el método parse para obtener un objeto Date usando únicamente el tiempo/hora de "fechaCita"
-       * para posteriormente obtener la representación en string del tiempo/hora de "fechaCitaFormatoFecha"
-       */
-      let fechaCitaFormatoFecha = date.parse(fechaCita, patternHoras);
-      let dateString2 = date.format(fechaCitaFormatoFecha, patternHoras);
-      /**
-       * Finalmente se evalúa si dateString1 y dateString2 son iguales,
-       * si es así entonces quiere decir que la cita a la que corresponde
-       * este horario no esta disponible. El método find devuelve la instancia de "cita" en este caso
-       *
-       * Si no es así quiere decir que no hay una cita que inicie a la hora asignada en "hora_acc" y el método find devuelve undefined
-       */
-      return dateString1 === dateString2;
-    });
+    let citaEncontrada = checkHorarioDisponible(citas, hora_acc);
     //Si el método find devolvió undefined entonces se agrega la hora actual a las citas disponibles
     if (!citaEncontrada) {
       //Se calcula el fin de la cita.
       let next = date.addMinutes(hora_acc, duracionCita);
       //Se obtiene la fecha de inicio y fin de la cita usando el objeto para formatear creado anteriormente
-      let fecha_inicio_formatted = date.format(hora_acc, patternHoras);
-      let fecha_fin_formatted = date.format(next, patternHoras);
+      let fecha_inicio_formatted = date.format(hora_acc, patternHora);
+      let fecha_fin_formatted = date.format(next, patternHora);
       //Se crea un string para representar la cita disponible
       let horario_formatted = `${fecha_inicio_formatted}-${fecha_fin_formatted}`;
       console.log("Cita disponible: ", horario_formatted);
@@ -160,7 +136,10 @@ function obtenerHorariosDisponibles(horario_dia, citas, fecha) {
        * */
       horariosDisponibles.push({
         horario_formatted,
-        fecha: date.parse(`${fecha} ${fecha_inicio_formatted}`, patternFecha),
+        fecha: date.parse(
+          `${fecha} ${fecha_inicio_formatted}`,
+          patternFechaCompleta
+        ),
       });
     }
     //Una vez evaluado la condición previa, actualizamos el valor de "hora_acc" con el siguiente horario a revisar
@@ -170,8 +149,40 @@ function obtenerHorariosDisponibles(horario_dia, citas, fecha) {
   console.log(horariosDisponibles);
   return horariosDisponibles;
 }
+/**
+ * Esta función permite obtener la cita que esta en determinada hora de un array de citas
+ * @param {*} citas Es un array que contiene las citas asociadas a la fecha y el horario_dia
+ * @param {*} fecha La fecha en la que se desea obtener la cita
+ * @returns {Array<{horario_formatted:string,fecha:Date}} Un objeto que contiene los horarios disponibles
+ */
+function checkHorarioDisponible(citas, fecha_horario) {
+  let cintaEncontrada = citas.find((cita) => {
+    //Se obtiene un string en el formato HH:mm:ss mediante el formateador creado previamente
+    let dateString1 = date.format(fecha_horario, patternHora);
+    //Se crea un objeto tipo Date, lo convertimos a string y obtenemos su parte que indica el tiempo
+    let fechaCita = new Date(cita.fecha)
+      .toISOString()
+      .split("T")[1]
+      .substring(0, 8);
+    /**
+     * Se usa el método parse para obtener un objeto Date usando únicamente el tiempo/hora de "fechaCita"
+     * para posteriormente obtener la representación en string del tiempo/hora de "fechaCitaFormatoFecha"
+     */
+    let fechaCitaFormatoFecha = date.parse(fechaCita, patternHora);
+    let dateString2 = date.format(fechaCitaFormatoFecha, patternHora);
+    /**
+     * Finalmente se evalúa si dateString1 y dateString2 son iguales,
+     * si es así entonces quiere decir que la cita a la que corresponde
+     * este horario no esta disponible. El método find devuelve la instancia de "cita" en este caso
+     *
+     * Si no es así quiere decir que no hay una cita que inicie a la hora asignada en "hora_acc" y el método find devuelve undefined
+     */
+    return dateString1 === dateString2;
+  });
+  return cintaEncontrada;
+}
 
-async function buscarFechasDisponibles(id_terapeuta, horario, fecha) {
+async function buscarFechasDisponibles(id_terapeuta, horario, fecha, hora=null) {
   let citas_excluidas = await obtenerCitasFechasExcluyente(id_terapeuta, fecha);
   console.log({ citas_excluidas });
   fecha = date.parse(fecha, patternFecha);
@@ -198,11 +209,9 @@ async function buscarFechasDisponibles(id_terapeuta, horario, fecha) {
     try {
       horario_seleccionado = await checkDentroHorario(horario, fecha_anterior);
       await checkCitasDisponibles(horario_seleccionado, citas);
-      // let horarios_disponibles = obtenerHorariosDisponibles(
-      //   horario_seleccionado,
-      //   citas,
-      //   fecha_anterior
-      // );
+      if(hora!==null&&checkHorarioDisponible(citas,hora)){
+        throw new Error("Horario ocupado este día");
+      }
       console.log(`${fecha_anterior} aplica como día disponible`);
       fechas_disponibles.push(fecha_anterior);
       fechas_disponibles_encontradas++;
@@ -230,6 +239,9 @@ async function buscarFechasDisponibles(id_terapeuta, horario, fecha) {
       //   citas,
       //   fecha_anterior
       // );
+      if(hora!==null&&checkHorarioDisponible(citas,hora)){
+        throw new Error("Horario ocupado este día");
+      }
       console.log(`${fecha_siguiente} aplica como día disponible`);
       fechas_disponibles.push(fecha_siguiente);
       fechas_disponibles_encontradas++;
@@ -246,5 +258,6 @@ module.exports = {
   checkCitasDisponibles,
   obtenerHorariosDisponibles,
   buscarFechasDisponibles,
-  checkFechaPosterior
+  checkFechaPosterior,
+  checkHorarioDisponible
 };

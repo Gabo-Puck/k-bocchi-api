@@ -19,9 +19,14 @@ const {
   checkDentroHorario,
   buscarFechasDisponibles,
   checkFechaPosterior,
+  checkHorarioDisponible,
 } = require("../Controllers/AlgoritmoCitas");
 const date = require("date-and-time");
-const { patternFecha, obtenerFechaComponent } = require("../utils/fechas");
+const {
+  patternFecha,
+  obtenerFechaComponent,
+  patternHora,
+} = require("../utils/fechas");
 const Terapeuta = require("../Models/Terapeuta");
 const { calcularDistancia } = require("../utils/geo");
 var router = express.Router();
@@ -143,7 +148,7 @@ router.delete("/", borrarCita);
 /**
  * @swagger
  * /citas:
- *  put:
+ *  patch:
  *    summary: Permite editar una cita
  *    tags: [Citas]
  *    requestBody:
@@ -174,7 +179,7 @@ router.delete("/", borrarCita);
  *             schema:
  *               type: string
  */
-router.put("/", modificarCita);
+router.patch("/", modificarCita);
 
 /**
  * @swagger
@@ -233,6 +238,8 @@ router.get("/:id", verCita);
  *               type: string
  */
 router.get("/", verTodasCitas);
+
+
 
 /**
  * @swagger
@@ -327,8 +334,114 @@ router.get(
         );
         return res.status(420).json(diasDisponibles);
       }
+      console.log(err);
     }
-    return res.status(500).json(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+);
+/**
+ * @swagger
+ * /citas/validarCambioFecha/{id_terapeuta}:
+ *  get:
+ *    summary: Permite validar si un horario esta disponible en una fecha
+ *    tags: [Citas]
+ *    responses:
+ *      "200":
+ *        description: Devuelve una
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                  type: string
+ *                  example: "20:00:00"
+ *      "420":
+ *        description: Devuelve fechas cercanas para agendar una cita
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                  type: string
+ *                  format: date
+ *      "400":
+ *        description: Devuelve un mensaje indicando que la fecha esta en un formato incorrecto
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "404":
+ *        description: Devuelve un mensaje indicando que no existe el terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *    parameters:
+ *      - in: path
+ *        name: id_terapeuta
+ *        required: true
+ *        schema:
+ *          type: integer
+ *      - in: query
+ *        name: fecha
+ *        required: true
+ *        schema:
+ *          type: string
+ *          format: date
+ *      - in: query
+ *        name: hora
+ *        required: true
+ *        schema:
+ *          type: string
+ *          format: time
+ *
+ */
+router.get(
+  "/validarCambioFecha/:id_terapeuta",
+  existeTerapeuta,
+  verHorario,
+  verCitasTerapeuta,
+  async (req, res, next) => {
+    let { fecha, hora } = req.query;
+    hora = date.parse(hora, patternHora);
+    let { horario, citas } = res.body;
+    let horario_seleccionado;
+    let { id_terapeuta } = req.params;
+    if (
+      !date.isValid(fecha, patternFecha) ||
+      !/\d{4}-\d{2}-\d{2}/g.test(fecha)
+    ) {
+      return res.status(400).json("La fecha esta en un formato incorrecto");
+    }
+
+    try {
+      horario_seleccionado = await checkDentroHorario(horario, fecha);
+      await checkFechaPosterior(fecha);
+      await checkCitasDisponibles(horario_seleccionado, citas);
+      if (checkHorarioDisponible(citas, hora))
+        throw { razon: "Esta ocupado el horario solicitado" };
+
+      return res.status(200).json("OK");
+    } catch (err) {
+      if (err.razon) {
+        let diasDisponibles = await buscarFechasDisponibles(
+          id_terapeuta,
+          horario,
+          fecha,
+          hora
+        );
+        console.log(citas);
+        return res.status(420).json(diasDisponibles);
+      }
+      console.log(err);
+    }
+    return res.status(500).json("Algo ha salido mal");
   }
 );
 
@@ -376,8 +489,6 @@ router.get(
  */
 router.get(
   "/obtenerCitas/:id_terapeuta",
-  // existeTerapeuta,
-  // verHorario,
   verCitasTerapeuta,
   (req, res, next) => {
     console.log(res.body);
@@ -393,16 +504,19 @@ router.get(
  *    tags: [Citas]
  *    responses:
  *      "200":
- *        description: Devuelve las citas de un terapeuta
+ *        description: Devuelve la distancia obtenida
  *        content:
  *          application/json:
  *            schema:
- *              type: array
- *              items:
- *                  type: object
- *                  $ref: '#/components/schemas/Cita'
+ *              type: number
  *      "404":
  *        description: Devuelve un mensaje indicando que no existe el terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "400":
+ *        description: Devuelve un mensaje indicando que el domicilio esta fuera del rango de servicio del terapeuta
  *        content:
  *          application/json:
  *            schema:

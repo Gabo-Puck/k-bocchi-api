@@ -1,5 +1,4 @@
 const { Model } = require("objection");
-const Terapeuta = require("./Terapeuta");
 const { formatearFechaMx } = require("../utils/formatearFecha");
 const date = require("date-and-time");
 class Cita extends Model {
@@ -16,15 +15,16 @@ class Cita extends Model {
     return json;
   }
   static relationMappings() {
-    const Usuario = require("./Usuario");
-    const Resena = require("./Resenas");
-    const Comentario = require("./Comentario");
+    const Terapeuta = require("./Terapeuta");
+    // const Usuario = require("./Usuario");
+    // const Resena = require("./Resenas");
+    // const Comentario = require("./Comentario");
     return {
-      terapeuta_horario: {
+      terapeuta_datos: {
         relation: Model.BelongsToOneRelation,
         modelClass: Terapeuta,
         join: {
-          from: "horarios.id_terapeuta",
+          from: "citas.id_terapeuta",
           to: "terapeutas.id",
         },
       },
