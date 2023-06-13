@@ -120,3 +120,15 @@ exports.verCitasTerapeuta = async (req, res, next) => {
     return res.status(500).json("Algo ha salido mal");
   }
 };
+
+
+// {
+//   "id_paciente": 78,
+//   "domicilio": "Valle de la Barca 1731, Parque Real, Zapopan, Jalisco, México",
+//   "fecha": "2023-06-15T18:00:00.000Z",
+//   "id": 259,
+//   "id_terapeuta": 210,
+//   "lat": 20.7429421,
+//   "lng": -103.4433085,
+//   "modalidad": "domicilio"
+// }
