@@ -73,7 +73,9 @@ router.get("/datos/:uid", async (req, res, next) => {
   let x = date.parse("11:14:05", "hh:mm:ss"); // => Jan 1 1970 23:14:05 GMT-0800
   let x1 = date.parse("11:14:05", "hh:mm:ss", true); // => Jan 1 1970 23:14:05 GMT+0000 (Jan 1 1970 15:14:05 GMT-0800)
   console.log(x, x1);
-  let usuario = await Usuario.query().findById(req.params.uid);
+  let usuario = await Usuario.query()
+    .withGraphJoined("[paciente,terapeuta]")
+    .findById(req.params.uid);
   if (!usuario) {
     return res
       .status(404)

@@ -114,7 +114,7 @@ exports.buscarTerapeutas = async (req, res, next) => {
 
 exports.loginTerapeuta = async (req, res, next) => {
   console.log(req.body);
-  let usuarioFisio = await Usuario.query().findOne({ email: req.body.email });
+  let usuarioFisio = await Usuario.query().withGraphJoined("[terapeuta]").findOne({ email: req.body.email });
   if (!usuarioFisio) {
     return res
       .status(404)
