@@ -16,7 +16,7 @@ exports.crearCita = async (req, res, next) => {
 
 exports.borrarCita = async (req, res, next) => {
   try {
-    let { id } = req.body;
+    let { id } = req.params;
     let cita = await Cita.query().findById(id);
     if (!cita) return res.status(404).json("No se encontro la cita");
     await cita.$query().delete();

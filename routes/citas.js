@@ -109,19 +109,10 @@ router.post("/", crearCita);
 
 /**
  * @swagger
- * /citas:
+ * /citas/{id}:
  *  delete:
  *    summary: Permite borrar una cita
  *    tags: [Citas]
- *    requestBody:
- *      required: true
- *      content:
- *        application/json:
- *          schema:
- *            type: object
- *            properties:
- *              id:
- *                 type: number
  *    responses:
  *      "200":
  *        description: Devuelve la cita borrada
@@ -142,8 +133,12 @@ router.post("/", crearCita);
  *           application/json:
  *             schema:
  *               type: string
+ *    parameters:
+ *      - name: id
+ *        in: path
+ *        required: true
  */
-router.delete("/", borrarCita);
+router.delete("/:id", borrarCita);
 
 /**
  * @swagger
