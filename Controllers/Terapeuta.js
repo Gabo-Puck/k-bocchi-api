@@ -1,6 +1,7 @@
 const Terapeuta = require("../Models/Terapeuta");
 const Usuario = require("../Models/Usuario");
 const { ROLES } = require("../roles");
+const { desencriptar } = require("../utils/encryption");
 
 exports.verTerapeutaDetalles = async (req, res, next) => {
   try {
