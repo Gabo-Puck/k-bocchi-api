@@ -11,6 +11,7 @@ const {
   buscarTerapeutas,
   loginTerapeuta,
   existeTerapeuta,
+  verEstrellas,
 } = require("../Controllers/Terapeuta");
 const router = express.Router();
 
@@ -302,8 +303,9 @@ router.get("/buscarNombre/:nombre", async (req, res, next) => {
   try {
     let { nombre } = req.params;
     let terapeutas = await Terapeuta.query()
-      .withGraphJoined("usuario")
+      .withGraphJoined("[usuario,horario]")
       .whereRaw(`(usuario.nombre like "%${nombre}%")`);
+    terapeutas = terapeutas.map((t) => ({ ...t, dias_habiles: t.horario.length }));
     return res.status(200).json(terapeutas);
   } catch (err) {
     console.log(err);
@@ -359,6 +361,52 @@ router.get(
   (req, res, next) => {
     res.status(200).json(res.body);
   }
+);
+/**
+ * @swagger
+ * /usuarios/fisioterapeutas/resenas/{id_terapeuta}:
+ *  get:
+ *    summary: Permite obtener las estrellas de un fisioterapeuta
+ *    tags: [Fisioterapeuta]
+ *    responses:
+ *      "200":
+ *        description: Devuelve un objeto con las estrellas del terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                horario:
+ *                  type: array
+ *                  items:
+ *                    type: object
+ *                    $ref: '#/components/schemas/Horario'
+ *      "500":
+ *        description: Devuelve un mensaje indicando que algo salio mal
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "404":
+ *        description: Devuelve un mensaje indicando que no se encontro el terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *    parameters:
+ *        - in: path
+ *          description: id del terapeuta
+ *          name: id_terapeuta
+ *          schema:
+ *            type: string
+ *
+ *
+ *
+ */
+router.get(
+  "/resenas/:id_terapeuta",
+  existeTerapeuta,
+  verEstrellas
 );
 
 module.exports = router;

@@ -445,6 +445,7 @@ router.get(
  * /citas/obtenerCitas/{id_terapeuta}:
  *  get:
  *    summary: Permite obtener las citas de un terapeuta
+ *    description: El parametro "fecha" no es obligatorio, si se deja vacío simplemente obtiene TODAS las citas del terapeuta
  *    tags: [Citas]
  *    responses:
  *      "200":
