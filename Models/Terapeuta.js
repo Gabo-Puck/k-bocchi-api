@@ -1,11 +1,13 @@
 const { Model } = require("objection");
 const { Horario } = require("./Horario");
+const { Cita } = require("./Cita");
 class Terapeuta extends Model {
   static get tableName() {
     return "terapeutas";
   }
-
+  
   static relationMappings() {
+    const Paciente = require("./Paciente");
     const Usuario = require("./Usuario");
     const Resena = require("./Resenas");
     const Comentario = require("./Comentario");
@@ -42,6 +44,19 @@ class Terapeuta extends Model {
           to: "horarios.id_terapeuta",
         },
       },
+      pacientes:{
+        relation: Model.ManyToManyRelation,
+        modelClass: Paciente,
+        join:{
+          from: "terapeutas.id",
+          through:{
+            modelClass: Cita,
+            from: "citas.id_terapeuta",
+            to: "citas.id_paciente"
+          },
+          to: "pacientes.id"
+        },
+      }
     };
   }
 }

@@ -12,6 +12,7 @@ const {
   loginTerapeuta,
   existeTerapeuta,
   verEstrellas,
+  verPacientes,
 } = require("../Controllers/Terapeuta");
 const router = express.Router();
 
@@ -407,6 +408,52 @@ router.get(
   "/resenas/:id_terapeuta",
   existeTerapeuta,
   verEstrellas
+);
+/**
+ * @swagger
+ * /usuarios/fisioterapeutas/pacientes/{id_terapeuta}:
+ *  get:
+ *    summary: Permite obtener los pacientes de un terapeuta
+ *    tags: [Fisioterapeuta]
+ *    responses:
+ *      "200":
+ *        description: Devuelve un array con los pacientes
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                horario:
+ *                  type: array
+ *                  items:
+ *                    type: object
+ *                    $ref: '#/components/schemas/Horario'
+ *      "500":
+ *        description: Devuelve un mensaje indicando que algo salio mal
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "404":
+ *        description: Devuelve un mensaje indicando que no se encontro el terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *    parameters:
+ *        - in: path
+ *          description: id del terapeuta
+ *          name: id_terapeuta
+ *          schema:
+ *            type: string
+ *
+ *
+ *
+ */
+router.get(
+  "/pacientes/:id_terapeuta",
+  existeTerapeuta,
+  verPacientes
 );
 
 module.exports = router;

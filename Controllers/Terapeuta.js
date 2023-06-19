@@ -178,3 +178,15 @@ exports.verEstrellas = async (req, res, next) => {
     return res.status(500).json("Algo ha salido mal");
   }
 };
+exports.verPacientes = async (req, res, next) => {
+  let { id_terapeuta } = req.params;
+  try {
+    let {pacientes} = await Terapeuta.query()
+      .withGraphJoined("pacientes")
+      .findById(id_terapeuta);
+    return res.status(200).json(pacientes);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
