@@ -34,11 +34,15 @@ const {
  *        terapeuta:
  *          type: object
  *          $ref: '#/components/schemas/Fisioterapeuta'
+ *        foto_perfil:
+ *          type: string
+ *          description: La ubicación de la foto de perfil
  *      example:
  *          id: 1bcac0e9-5682-4fe2-a92f-55b0c552551f
  *          correo: bidenBlast@gmail.com
  *          contrasena: contrasenaS
  *          rol: paciente
+ *          foto_perfil: 1bcac0e9-5682-4fe2-a92f-55b0c552551f.jpg
  *
  */
 
@@ -502,6 +506,64 @@ router.get("/reactivarCuenta/:stringEncoded", async (req, res, next) => {
   }
 });
 
+/**
+ * @swagger
+ * /usuarios/datos:
+ *  patch:
+ *    summary: Permite editar los datos de un usuario
+ *    tags: [Usuario]
+ *    responses:
+ *      200:
+ *        description: Devuelve los los datos actualizados del usuario
+ *        content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *            $ref: '#/components/schemas/Usuario'
+ *      400:
+ *        description: Devuelve un error indicando que los campos estan incorrectas
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      404:
+ *        description: Devuelve un mensaje de error indicando que no existe el terapeuta
+ *        content:
+ *        application/json:
+ *          schema:
+ *            type: string
+ *      500:
+ *        description: Devuelve un mensaje que algo salió mal
+ *        content:
+ *        application/json:
+ *          schema:
+ *            type: string
+ *    requestBody:
+ *        required: true
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              $ref: '#/components/schemas/Usuario'
+ *
+ */
+
+router.patch("/datos", async (req, res, next) => {
+  let usuario;
+  let { id, ...resto } = req.body;
+  try {
+    if (resto.rol !== undefined)
+      return res.status(400).json("No se puede modificar el rol");
+    if (id === undefined) {
+      return res.status(400).json("No esta específicada la id");
+    }
+    usuario = await Usuario.query().patchAndFetchById(id, { ...resto });
+    console.log(usuario);
+    return res.status(200).json(usuario);
+  } catch (err) {
+    return res.status(500).json("Algo ha salido mal");
+  }
+});
 /**
  * @swagger
  * /usuarios/validarLink/{stringEncoded}:
