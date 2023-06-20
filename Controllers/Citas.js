@@ -99,6 +99,7 @@ exports.verCitasTerapeuta = async (req, res, next) => {
     let { id_terapeuta } = req.params;
     let { fecha } = req.query;
     let citas = await Cita.query()
+      .withGraphJoined("paciente_datos.[usuario]")
       .where("id_terapeuta", "=", id_terapeuta)
       .modify((builder) => {
         let fechaInicio = date.parse(fecha || "", patternFecha);
@@ -111,7 +112,15 @@ exports.verCitasTerapeuta = async (req, res, next) => {
             .andWhere("fecha", "<", fecha2);
         }
       })
+      .modifyGraph("paciente_datos.usuario", (builder) => {
+        builder.select("nombre", "foto_perfil");
+      })
       .orderBy("fecha", "DESC");
+    citas = citas.map((m) => {
+      let x = { ...m.paciente_datos.usuario };
+      delete m.paciente_datos;
+      return { ...m, ...x };
+    });
     // .debug();
     res.body = { ...res.body, citas };
     next();
@@ -120,7 +129,6 @@ exports.verCitasTerapeuta = async (req, res, next) => {
     return res.status(500).json("Algo ha salido mal");
   }
 };
-
 
 // {
 //   "id_paciente": 78,

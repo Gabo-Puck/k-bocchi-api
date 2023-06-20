@@ -7,7 +7,7 @@ const router = express.Router();
  * @swagger
  * /usuarios/pacientes/{id}/citas:
  *  get:
- *    summary: Permite validar un link para validacion de contraseña
+ *    summary: Permite obtener las citas de un paciente
  *    tags: [Paciente]
  *    responses:
  *      404:

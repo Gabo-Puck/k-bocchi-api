@@ -1,6 +1,7 @@
 const { Model } = require("objection");
 const { formatearFechaMx } = require("../utils/formatearFecha");
 const date = require("date-and-time");
+const Paciente = require("./Paciente");
 class Cita extends Model {
   static get tableName() {
     return "citas";
@@ -26,6 +27,14 @@ class Cita extends Model {
         join: {
           from: "citas.id_terapeuta",
           to: "terapeutas.id",
+        },
+      },
+      paciente_datos: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Paciente,
+        join: {
+          from: "citas.id_paciente",
+          to: "pacientes.id",
         },
       },
     };
