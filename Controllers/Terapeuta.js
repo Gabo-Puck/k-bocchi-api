@@ -182,8 +182,14 @@ exports.verPacientes = async (req, res, next) => {
   let { id_terapeuta } = req.params;
   try {
     let { pacientes } = await Terapeuta.query()
-      .withGraphJoined("pacientes")
+      .withGraphJoined("pacientes.[usuario]")
       .findById(id_terapeuta);
+    pacientes = pacientes.map((p)=>{
+      delete p.apellido
+      let {nombre,foto_perfil} = p.usuario;
+      delete p.usuario;
+      return {...p,nombre,foto_perfil}
+    })
     return res.status(200).json(pacientes);
   } catch (err) {
     console.log(err);
