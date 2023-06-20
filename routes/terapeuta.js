@@ -13,6 +13,7 @@ const {
   existeTerapeuta,
   verEstrellas,
   verPacientes,
+  insertarHorarios,
 } = require("../Controllers/Terapeuta");
 const router = express.Router();
 
@@ -306,7 +307,10 @@ router.get("/buscarNombre/:nombre", async (req, res, next) => {
     let terapeutas = await Terapeuta.query()
       .withGraphJoined("[usuario,horario]")
       .whereRaw(`(usuario.nombre like "%${nombre}%")`);
-    terapeutas = terapeutas.map((t) => ({ ...t, dias_habiles: t.horario.length }));
+    terapeutas = terapeutas.map((t) => ({
+      ...t,
+      dias_habiles: t.horario.length,
+    }));
     return res.status(200).json(terapeutas);
   } catch (err) {
     console.log(err);
@@ -404,11 +408,7 @@ router.get(
  *
  *
  */
-router.get(
-  "/resenas/:id_terapeuta",
-  existeTerapeuta,
-  verEstrellas
-);
+router.get("/resenas/:id_terapeuta", existeTerapeuta, verEstrellas);
 /**
  * @swagger
  * /usuarios/fisioterapeutas/pacientes/{id_terapeuta}:
@@ -421,13 +421,10 @@ router.get(
  *        content:
  *          application/json:
  *            schema:
- *              type: object
- *              properties:
- *                horario:
- *                  type: array
- *                  items:
- *                    type: object
- *                    $ref: '#/components/schemas/Horario'
+ *              type: array
+ *              items:
+ *                type: object
+ *                $ref: '#/components/schemas/Usuario'
  *      "500":
  *        description: Devuelve un mensaje indicando que algo salio mal
  *        content:
@@ -450,10 +447,49 @@ router.get(
  *
  *
  */
-router.get(
-  "/pacientes/:id_terapeuta",
-  existeTerapeuta,
-  verPacientes
-);
+router.get("/pacientes/:id_terapeuta", existeTerapeuta, verPacientes);
+/**
+ * @swagger
+ * /usuarios/fisioterapeutas/horario:
+ *  patch:
+ *    description: Esta ruta permite modificar el horario del terapeuta. Se usa un método "upsert graph" (UPdate,inSERT). Esto quiere decir que aquellos items que tengan su propiedad id serán modificados/insertados, los items que no tengan id se insertaran y los items que no existan se eliminaran
+ *    summary: Permite modificar el horario del terapeuta
+ *    tags: [Fisioterapeuta]
+ *    responses:
+ *      "200":
+ *        description: Devuelve el nuevo horario del terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                horario:
+ *                  type: array
+ *                  items:
+ *                    type: object
+ *                    $ref: '#/components/schemas/Horario'
+ *      "500":
+ *        description: Devuelve un mensaje indicando que algo salio mal
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "404":
+ *        description: Devuelve un mensaje indicando que no se encontro el terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *    requestBody:
+ *        required: true
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                type: object
+ *                $ref : "#/components/schemas/Horario"
+ */
+router.patch("/horario", insertarHorarios);
 
 module.exports = router;

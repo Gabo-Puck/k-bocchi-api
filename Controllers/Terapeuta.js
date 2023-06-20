@@ -181,12 +181,45 @@ exports.verEstrellas = async (req, res, next) => {
 exports.verPacientes = async (req, res, next) => {
   let { id_terapeuta } = req.params;
   try {
-    let {pacientes} = await Terapeuta.query()
+    let { pacientes } = await Terapeuta.query()
       .withGraphJoined("pacientes")
       .findById(id_terapeuta);
     return res.status(200).json(pacientes);
   } catch (err) {
     console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+
+exports.insertarHorarios = async (req, res, next) => {
+  const days = {
+    domingo: 0,
+    lunes: 0,
+    martes: 0,
+    miercoles: 0,
+    jueves: 0,
+    viernes: 0,
+    sabado: 0,
+  };
+  console.log(req.body);
+  let { id_terapeuta, horario: grafo } = req.body;
+  try {
+    if (grafo.length <= 0 || grafo.length > 7)
+      throw "Horario no cumple con las validaciones: Cantidad imposible de días";
+    grafo.forEach((g) => {
+      if (days[g.dia] >= 1) {
+        throw "Horario no cumple con las validaciones: Día repetido";
+      }
+      days[g.dia]++;
+    });
+    let { horario } = await Terapeuta.query().upsertGraphAndFetch({
+      id: id_terapeuta,
+      horario: grafo,
+    });
+    return res.status(201).json({ horario });
+  } catch (error) {
+    console.log(error);
+    if (typeof error === "string") return res.status(500).json(error);
     return res.status(500).json("Algo ha salido mal");
   }
 };
