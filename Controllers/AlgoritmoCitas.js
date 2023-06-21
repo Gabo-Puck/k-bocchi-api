@@ -93,7 +93,7 @@ function calcularCitasPosibles(hF, hI) {
    * Mediante la función "substract" de la librería date-and-time se obtiene la diferencia entre dos fechas,
    *  y mediante la función "toMinutes" se obtienen los minutos de diferencia, al dividir entre la duración
    * de una cita podemos obtener cuantas citas son posibles de agendar en un determinado rango de tiempo*/
-  return Math.floor(date.subtract(hF, hI).toMinutes()) / duracionCita;
+  return Math.floor(Math.floor(date.subtract(hF, hI).toMinutes()) / duracionCita);
 }
 
 /**

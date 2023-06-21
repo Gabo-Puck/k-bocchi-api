@@ -14,6 +14,7 @@ const {
   verEstrellas,
   verPacientes,
   insertarHorarios,
+  verPacientesBitacora,
 } = require("../Controllers/Terapeuta");
 const router = express.Router();
 
@@ -448,6 +449,50 @@ router.get("/resenas/:id_terapeuta", existeTerapeuta, verEstrellas);
  *
  */
 router.get("/pacientes/:id_terapeuta", existeTerapeuta, verPacientes);
+/**
+ * @swagger
+ * /usuarios/fisioterapeutas/bitacora/pacientes/{id_terapeuta}:
+ *  get:
+ *    summary: Permite obtener los pacientes de la bitacora de un terapeuta
+ *    tags: [Fisioterapeuta]
+ *    responses:
+ *      "200":
+ *        description: Devuelve un array con los pacientes
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                type: object
+ *                $ref: '#/components/schemas/Usuario'
+ *      "500":
+ *        description: Devuelve un mensaje indicando que algo salio mal
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "404":
+ *        description: Devuelve un mensaje indicando que no se encontro el terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *    parameters:
+ *        - in: path
+ *          description: id del terapeuta
+ *          name: id_terapeuta
+ *          schema:
+ *            type: string
+ *        - in: query
+ *          description: nombre del paciente
+ *          name: nombre
+ *          schema:
+ *            type: string
+ *
+ *
+ *
+ */
+router.get("/bitacora/pacientes/:id_terapeuta", existeTerapeuta, verPacientesBitacora);
 /**
  * @swagger
  * /usuarios/fisioterapeutas/horario:

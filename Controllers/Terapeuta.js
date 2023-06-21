@@ -1,3 +1,4 @@
+const Paciente = require("../Models/Paciente");
 const Terapeuta = require("../Models/Terapeuta");
 const Usuario = require("../Models/Usuario");
 const { ROLES } = require("../roles");
@@ -178,18 +179,72 @@ exports.verEstrellas = async (req, res, next) => {
     return res.status(500).json("Algo ha salido mal");
   }
 };
+// [
+//   {
+//     "apellidos": "Esquivies Torres",
+//     "id": 77,
+//     "id_usuario": "d7072869-8c24-4c00-b059-44190edf96b2",
+//     "nombre": "Lizeth Esquivies Torres",
+//     "telefono": "",
+//     "foto_perfil": "d7072869-8c24-4c00-b059-44190edf96b2.jpeg"
+//   },
+//   {
+//     "apellidos": "Altamirano",
+//     "id": 36,
+//     "id_usuario": "raBh6LK6t3cHGxDjxdouQlnq7713",
+//     "nombre": "Werner Ziegler",
+//     "telefono": "3302930231",
+//     "foto_perfil": null
+//   },
+//   {
+//     "apellidos": "Orozco Ortiz",
+//     "id": 85,
+//     "id_usuario": "5d6cfd49-adeb-429c-90a2-b7a1171c3895",
+//     "nombre": "Paulo Orozco Ortiz",
+//     "telefono": "",
+//     "foto_perfil": "5d6cfd49-adeb-429c-90a2-b7a1171c3895.jfif"
+//   }
+// ]
 exports.verPacientes = async (req, res, next) => {
   let { id_terapeuta } = req.params;
   try {
-    let { pacientes } = await Terapeuta.query()
-      .withGraphJoined("pacientes.[usuario]")
-      .findById(id_terapeuta);
-    pacientes = pacientes.map((p)=>{
-      delete p.apellido
-      let {nombre,foto_perfil} = p.usuario;
+    let pacientes = await Paciente.query()
+      .withGraphFetched("usuario")
+      .modifyGraph("usuario", (builder) => {
+        builder.select("email", "nombre", "telefono", "foto_perfil");
+      })
+      .whereExists(
+        Paciente.relatedQuery("terapeutas").where(
+          "terapeutas.id",
+          "=",
+          id_terapeuta
+        )
+      )
+      .select("id", "id_usuario");
+    pacientes = pacientes.map((p) => {
+      let usuario = p.usuario
       delete p.usuario;
-      return {...p,nombre,foto_perfil}
-    })
+      return { ...p, ...usuario };
+    });
+    return res.status(200).json(pacientes);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+
+exports.verPacientesBitacora = async (req, res, next) => {
+  let { id_terapeuta } = req.params;
+  try {
+    let pacientes = await Usuario.query()
+      .withGraphFetched("paciente.citas")
+      .modifyGraph("paciente", (builder) => {
+        builder.select("id");
+      })
+      .whereIn(
+        Paciente.relatedQuery("citas").where("id_terapeuta", "=", id_terapeuta)
+      );
+
     return res.status(200).json(pacientes);
   } catch (err) {
     console.log(err);

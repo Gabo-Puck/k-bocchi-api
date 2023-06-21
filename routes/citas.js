@@ -234,8 +234,6 @@ router.get("/:id", verCita);
  */
 router.get("/", verTodasCitas);
 
-
-
 /**
  * @swagger
  * /citas/validarFecha/{id_terapeuta}:
@@ -404,18 +402,17 @@ router.get(
   verCitasTerapeuta,
   async (req, res, next) => {
     let { fecha, hora } = req.query;
-    hora = date.parse(hora, patternHora);
     let { horario, citas } = res.body;
     let horario_seleccionado;
     let { id_terapeuta } = req.params;
-    if (
-      !date.isValid(fecha, patternFecha) ||
-      !/\d{4}-\d{2}-\d{2}/g.test(fecha)
-    ) {
-      return res.status(400).json("La fecha esta en un formato incorrecto");
-    }
-
     try {
+      hora = date.parse(hora, patternHora);
+      if (
+        !date.isValid(fecha, patternFecha) ||
+        !/\d{4}-\d{2}-\d{2}/g.test(fecha)
+      ) {
+        return res.status(400).json("La fecha esta en un formato incorrecto");
+      }
       horario_seleccionado = await checkDentroHorario(horario, fecha);
       await checkFechaPosterior(fecha);
       await checkCitasDisponibles(horario_seleccionado, citas);
