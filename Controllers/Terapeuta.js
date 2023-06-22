@@ -3,7 +3,14 @@ const Terapeuta = require("../Models/Terapeuta");
 const Usuario = require("../Models/Usuario");
 const { ROLES } = require("../roles");
 const { desencriptar } = require("../utils/encryption");
-
+const date = require("date-and-time");
+const {
+  patternFecha,
+  patternFechaCompleta,
+  obtenerFechaActualMexico,
+} = require("../utils/fechas");
+const { Cita } = require("../Models/Cita");
+const { ref } = require("objection");
 exports.verTerapeutaDetalles = async (req, res, next) => {
   try {
     let { id_terapeuta } = req.params;
@@ -179,32 +186,6 @@ exports.verEstrellas = async (req, res, next) => {
     return res.status(500).json("Algo ha salido mal");
   }
 };
-// [
-//   {
-//     "apellidos": "Esquivies Torres",
-//     "id": 77,
-//     "id_usuario": "d7072869-8c24-4c00-b059-44190edf96b2",
-//     "nombre": "Lizeth Esquivies Torres",
-//     "telefono": "",
-//     "foto_perfil": "d7072869-8c24-4c00-b059-44190edf96b2.jpeg"
-//   },
-//   {
-//     "apellidos": "Altamirano",
-//     "id": 36,
-//     "id_usuario": "raBh6LK6t3cHGxDjxdouQlnq7713",
-//     "nombre": "Werner Ziegler",
-//     "telefono": "3302930231",
-//     "foto_perfil": null
-//   },
-//   {
-//     "apellidos": "Orozco Ortiz",
-//     "id": 85,
-//     "id_usuario": "5d6cfd49-adeb-429c-90a2-b7a1171c3895",
-//     "nombre": "Paulo Orozco Ortiz",
-//     "telefono": "",
-//     "foto_perfil": "5d6cfd49-adeb-429c-90a2-b7a1171c3895.jfif"
-//   }
-// ]
 exports.verPacientes = async (req, res, next) => {
   let { id_terapeuta } = req.params;
   try {
@@ -222,7 +203,7 @@ exports.verPacientes = async (req, res, next) => {
       )
       .select("id", "id_usuario");
     pacientes = pacientes.map((p) => {
-      let usuario = p.usuario
+      let usuario = p.usuario;
       delete p.usuario;
       return { ...p, ...usuario };
     });
@@ -236,16 +217,31 @@ exports.verPacientes = async (req, res, next) => {
 exports.verPacientesBitacora = async (req, res, next) => {
   let { id_terapeuta } = req.params;
   try {
-    let pacientes = await Usuario.query()
-      .withGraphFetched("paciente.citas")
-      .modifyGraph("paciente", (builder) => {
-        builder.select("id");
-      })
-      .whereIn(
-        Paciente.relatedQuery("citas").where("id_terapeuta", "=", id_terapeuta)
-      );
+    let fecha1 = date.format(obtenerFechaActualMexico(), patternFechaCompleta);
+    console.log({ fecha1 });
+    let pacientesFiltro = Paciente.query()
+      .joinRelated("terapeutas")
+      .where("terapeutas.id", "=", id_terapeuta)
+      .distinct("pacientes.id");
+    let pacientes = await Paciente.relatedQuery("citas")
+      .for(pacientesFiltro)
+      .where("fecha", "<", fecha1);
+    let p = await Paciente.query()
+      .withGraphJoined("[terapeutas as t, citas as c]")
+      .modifyGraph("c", (builder) => {
+        builder.where(
+          "fecha",
+          "=",
+          Cita.query()
+            .where("id_paciente", "=", ref("id_paciente"))
+            .andWhere("id_terapeuta", "=", id_terapeuta)
+            .max("fecha")
+        );
+      });
+    // .where("id_terapeuta", "=", id_terapeuta);
+    // .max("fecha");
 
-    return res.status(200).json(pacientes);
+    return res.status(200).json(p);
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo ha salido mal");
