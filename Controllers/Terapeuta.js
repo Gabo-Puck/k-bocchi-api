@@ -8,9 +8,13 @@ const {
   patternFecha,
   patternFechaCompleta,
   obtenerFechaActualMexico,
+  obtenerFechaComponent,
+  patternHora,
+  obtenerFechaTiempoComponent,
+  obtenerHoraComponent,
 } = require("../utils/fechas");
 const { Cita } = require("../Models/Cita");
-const { ref } = require("objection");
+const { ref, raw } = require("objection");
 exports.verTerapeutaDetalles = async (req, res, next) => {
   try {
     let { id_terapeuta } = req.params;
@@ -216,31 +220,70 @@ exports.verPacientes = async (req, res, next) => {
 
 exports.verPacientesBitacora = async (req, res, next) => {
   let { id_terapeuta } = req.params;
+  let { nombre } = req.query;
   try {
-    let fecha1 = date.format(obtenerFechaActualMexico(), patternFechaCompleta);
-    console.log({ fecha1 });
-    let pacientesFiltro = Paciente.query()
-      .joinRelated("terapeutas")
-      .where("terapeutas.id", "=", id_terapeuta)
-      .distinct("pacientes.id");
-    let pacientes = await Paciente.relatedQuery("citas")
-      .for(pacientesFiltro)
-      .where("fecha", "<", fecha1);
+    console.log({ x: obtenerFechaComponent() });
+    let f = obtenerFechaActualMexico();
+    let fechaActual = date.parse(obtenerFechaTiempoComponent(f), patternFechaCompleta);
+    let fechaLimite = date.addDays(fechaActual, 1);
+    fechaLimite = date.addSeconds(fechaLimite, -1);
+    let hora_consultada = obtenerHoraComponent(f);
+    // let FechaFinalFormateada = date.format(fechaLimite, patternFecha);
+    // console.log({ fecha1 });
     let p = await Paciente.query()
-      .withGraphJoined("[terapeutas as t, citas as c]")
-      .modifyGraph("c", (builder) => {
-        builder.where(
-          "fecha",
-          "=",
-          Cita.query()
-            .where("id_paciente", "=", ref("id_paciente"))
-            .andWhere("id_terapeuta", "=", id_terapeuta)
-            .max("fecha")
-        );
-      });
-    // .where("id_terapeuta", "=", id_terapeuta);
-    // .max("fecha");
+      .withGraphJoined("[citas as ultima_cita,usuario]")
+      .where("ultima_cita.id_terapeuta", "=", id_terapeuta)
+      .select("pacientes.id", "pacientes.id_usuario")
+      .select(
+        raw(
+          `FN_TIENE_CITA(pacientes.id,${id_terapeuta},"${date.format(
+            fechaActual,
+            patternFecha
+          )} 00:00:00","${date.format(
+            fechaLimite,
+            patternFechaCompleta
+          )}","${hora_consultada}")`
+        ).as("has_cita_hoy")
+      )
+      // .orWhere("ultima_cita.fecha", "<=", fecha1)
+      // .orWhere("ultima_cita.fecha",">",)
+      .andWhere(
+        "ultima_cita.fecha",
+        "=",
+        Cita.query()
+          .where("id_paciente", "=", ref("ultima_cita.id_paciente"))
+          .andWhere("id_terapeuta", "=", id_terapeuta)
+          .max("fecha")
+      )
+      .modify((builder) => {
+        if (nombre) builder.andWhereRaw(`(usuario.nombre like "%${nombre}%")`);
+      })
+      .modifyGraph("usuario", (builder) => {
+        builder.select("nombre", "foto_perfil", "telefono");
+      })
+      .modifyGraph("ultima_cita", (builder) => {
+        builder.select("domicilio", "fecha", "id_terapeuta");
+      })
+      .orderBy([
+        {
+          column: "has_cita_hoy",
+          order: "desc",
+        },
+        {
+          column: "ultima_cita.fecha",
+          order: "desc",
+        },
+      ])
 
+      .debug();
+    p = p.map((p) => {
+      let { usuario } = { ...p };
+      delete p.usuario;
+      return {
+        ...p,
+        ...usuario,
+      };
+    });
     return res.status(200).json(p);
   } catch (err) {
     console.log(err);
