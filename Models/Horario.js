@@ -19,6 +19,4 @@ class Horario extends Model {
     };
   }
 }
-module.exports = {
-  Horario,
-};
+module.exports = Horario;

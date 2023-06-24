@@ -1,7 +1,4 @@
 const { Model } = require("objection");
-const { formatearFechaMx } = require("../utils/formatearFecha");
-const date = require("date-and-time");
-const Paciente = require("./Paciente");
 class Cita extends Model {
   static get tableName() {
     return "citas";
@@ -16,6 +13,8 @@ class Cita extends Model {
     return json;
   }
   static relationMappings() {
+    const Paciente = require("./Paciente");
+    const Nota = require("./Nota");
     const Terapeuta = require("./Terapeuta");
     // const Usuario = require("./Usuario");
     // const Resena = require("./Resenas");
@@ -37,9 +36,15 @@ class Cita extends Model {
           to: "pacientes.id",
         },
       },
+      nota: {
+        relation: Model.HasOneRelation,
+        modelClass: Nota,
+        join:{
+          from: "citas.id",
+          to: "notas.id_cita"
+        }
+      },
     };
   }
 }
-module.exports = {
-  Cita,
-};
+module.exports = Cita;

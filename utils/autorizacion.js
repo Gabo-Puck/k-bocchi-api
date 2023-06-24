@@ -1,3 +1,3 @@
-const { Usuario } = require("../Models/Usuario")
+const Usuario  = require("../Models/Usuario")
 
 

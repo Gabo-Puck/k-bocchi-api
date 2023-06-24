@@ -13,7 +13,7 @@ const {
   obtenerFechaTiempoComponent,
   obtenerHoraComponent,
 } = require("../utils/fechas");
-const { Cita } = require("../Models/Cita");
+const Cita = require("../Models/Cita");
 const { ref, raw } = require("objection");
 exports.verTerapeutaDetalles = async (req, res, next) => {
   try {

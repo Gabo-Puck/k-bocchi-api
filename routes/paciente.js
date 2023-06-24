@@ -1,5 +1,5 @@
 const express = require("express");
-const { Cita } = require("../Models/Cita");
+const Cita = require("../Models/Cita");
 const { patternFecha } = require("../utils/fechas");
 const date = require("date-and-time");
 const router = express.Router();

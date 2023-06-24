@@ -1,0 +1,102 @@
+const Nota = require("../Models/Nota");
+
+exports.verNotas = async (req, res, next) => {
+  try {
+    let notas = await Nota.query();
+    return res.status(200).json(notas);
+  } catch (err) {
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+exports.verNotasTerapeuta = async (req, res, next) => {
+  let { id_terapeuta } = req.params;
+  let { id_paciente } = req.query;
+  try {
+    let notas = await Nota.query()
+      .joinRelated("[cita_nota as cita]")
+      .where((builder) => {
+        builder
+          .where("cita.id_terapeuta", "=", id_terapeuta)
+          .orWhereIn(
+            "notas.id",
+            Nota.query()
+              .joinRelated("terapeuta_compartida as terapeuta")
+              .where("terapeuta.id", "=", id_terapeuta)
+              .select("notas.id")
+          );
+      })
+      .modify((builder) => {
+        if (id_paciente) {
+          console.log({ id_paciente });
+          builder.andWhere("cita.id_paciente", "=", id_paciente);
+        }
+      });
+
+
+    return res.status(200).json(notas);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+exports.crearNota = async (req, res, next) => {
+  let { body } = req;
+  try {
+    let nota = await Nota.query().insertAndFetch(body);
+    return res.status(201).json(nota);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+
+exports.validarAutoridad = async (req, res, next) => {
+  let { id_terapeuta, id } = req.body;
+  try {
+    let nota = await Nota.query().findById(id);
+
+    if (!nota)
+      return res.status(404).json("No se encontro la nota que deseas eliminar");
+    let cita = await nota.$relatedQuery("cita_nota");
+
+    if (cita.id_terapeuta !== Number(id_terapeuta))
+      return res.status(403).json("No tienes acceso para manipular esta nota");
+    res.nota = nota;
+    nota.$query().patchAndFetch();
+    next();
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+
+exports.eliminarNota = async (req, res, next) => {
+  let { nota } = res;
+  try {
+    if (!nota) {
+      throw new Error("Falta property 'nota' en 'res'");
+    }
+    let resultado = await nota.$query().delete();
+    return res.status(200).json(resultado);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+
+exports.modificarNota = async (req, res, next) => {
+  let { nota: partialNota } = req.body;
+  let { nota } = res;
+  try {
+    if (!nota) {
+      throw new Error("Falta property 'nota' en 'res'");
+    }
+    if (partialNota.id_cita !== nota.id_cita)
+      return res.status(400).json("No se puede modificar la cita de una nota");
+    let resultado = await nota.$query().patchAndFetch(partialNota);
+    return res.status(200).json(resultado);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};

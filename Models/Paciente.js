@@ -6,7 +6,7 @@ class Paciente extends Model {
   }
 
   static relationMappings() {
-    const { Cita } = require("./Cita");
+    const Cita = require("./Cita");
     const Usuario = require("./Usuario");
     const Resena = require("./Resenas");
     const Terapeuta = require("./Terapeuta");

@@ -26,9 +26,13 @@ const {
   patternFecha,
   obtenerFechaComponent,
   patternHora,
+  obtenerFechaActualMexico,
+  obtenerHoraComponent,
+  patternFechaCompleta,
 } = require("../utils/fechas");
 const Terapeuta = require("../Models/Terapeuta");
 const { calcularDistancia } = require("../utils/geo");
+const Cita = require("../Models/Cita");
 var router = express.Router();
 
 /**
@@ -489,6 +493,66 @@ router.get(
   }
 );
 
+/**
+ * @swagger
+ * /citas/sinNota/{id_terapeuta}/{id_paciente}:
+ *  get:
+ *    summary: Permite obtener las citas que no tengan una nota asociada dado un paciente y un terapeuta
+ *    tags: [Citas]
+ *    responses:
+ *      "200":
+ *        description: Devuelve un arreglo con las citas que no tienen nota
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                type: object
+ *                $ref: '#/components/schemas/Cita'
+ *      "404":
+ *        description: Devuelve un mensaje indicando que no existe el terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *    parameters:
+ *      - in: path
+ *        name: id_terapeuta
+ *        required: true
+ *        description: ID del terapeuta del cual se desean obtener las citas
+ *      - in: path
+ *        name: id_paciente
+ *        required: true
+ *        description: ID del paciente del cual se desean obtener las citas
+ */
+router.get("/sinNota/:id_terapeuta/:id_paciente", async (req, res, next) => {
+  let { id_terapeuta, id_paciente } = req.params;
+  let fechaActual = obtenerFechaActualMexico();
+  let fecha = obtenerFechaComponent(fechaActual);
+  let hora = obtenerHoraComponent(fechaActual);
+  let fechaActualString = `${fecha} ${hora}`;
+  try {
+    let citasSinNota = await Cita.query()
+      .where((builder) => {
+        builder
+          .where("id_paciente", "=", id_paciente)
+          .andWhere("id_terapeuta", "=", id_terapeuta)
+          .andWhere("fecha", "<=", fechaActualString);
+      })
+      .whereNotExists(Cita.relatedQuery("nota"))
+      .debug();
+    return res.status(200).json(citasSinNota);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+});
 /**
  * @swagger
  * /citas/validarDomicilio/{id_terapeuta}:

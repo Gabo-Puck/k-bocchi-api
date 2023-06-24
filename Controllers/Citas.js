@@ -1,4 +1,4 @@
-const { Cita } = require("../Models/Cita");
+const Cita = require("../Models/Cita");
 const date = require("date-and-time");
 const { obtenerFechaActualMexico, patternFecha } = require("../utils/fechas");
 // const patternFecha2 = date.compile("YYYY-MM-DD HH:mm:ss"); //Formateador que permite convertir un objeto Date a un string con el formato indicado de fecha
