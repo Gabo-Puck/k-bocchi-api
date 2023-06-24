@@ -88,7 +88,12 @@ router.get("/", verNotas);
  *          application/json:
  *              schema:
  *                  type: object
- *                  $ref: '#/components/schemas/Nota'
+ *                  properties:
+ *                    nota:
+ *                      type: object
+ *                      $ref: "#/components/schemas/Nota"
+ *                    id_terapeuta:
+ *                      type: integer
  *    tags: [Notas]
  *    responses:
  *      "201":
@@ -98,6 +103,18 @@ router.get("/", verNotas);
  *            schema:
  *              type: object
  *              $ref: '#/components/schemas/Nota'
+ *      "401":
+ *        description: Devuelve un mensaje indicando que el terapeuta en cuestión no tiene permiso para crear la cita
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "403":
+ *        description: Devuelve un mensaje indicando que la cita asociada a la nota ya tiene una nota creada
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
  *      "500":
  *         description: Devuelve un mensaje indicando que algo salió mal
  *         content:

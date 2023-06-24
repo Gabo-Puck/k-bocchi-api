@@ -546,6 +546,7 @@ router.get("/sinNota/:id_terapeuta/:id_paciente", async (req, res, next) => {
           .andWhere("fecha", "<=", fechaActualString);
       })
       .whereNotExists(Cita.relatedQuery("nota"))
+      .orderBy("fecha", "DESC")
       .debug();
     return res.status(200).json(citasSinNota);
   } catch (err) {

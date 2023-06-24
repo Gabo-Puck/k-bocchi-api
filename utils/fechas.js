@@ -38,7 +38,18 @@ const obtenerFechaComponent = (fecha = obtenerFechaActualMexico()) => {
  * @returns
  */
 const obtenerHoraComponent = (fecha = obtenerFechaActualMexico()) => {
-  return fecha.toISOString().split("T")[1].substring(0,8);
+  return fecha.toISOString().split("T")[1].substring(0, 8);
+};
+/**
+ * Función que permite obtener un string representando la fecha y hora. Si no se provee una fecha
+ * se devuelve la fecha y hora actual en GMT-6
+ * @param {Date} fecha Objeto Date del cual queremos obtener únicamente su fecha
+ * @returns
+ */
+const obtenerFechaHoraComponent = (fecha = obtenerFechaActualMexico()) => {
+  let f = obtenerFechaComponent(fecha);
+  let h = obtenerHoraComponent(fecha);
+  return `${f} ${h}`;
 };
 module.exports = {
   obtenerFechaActualMexico,
@@ -47,5 +58,6 @@ module.exports = {
   patternHora,
   obtenerFechaComponent,
   obtenerFechaTiempoComponent,
-  obtenerHoraComponent
+  obtenerHoraComponent,
+  obtenerFechaHoraComponent
 };

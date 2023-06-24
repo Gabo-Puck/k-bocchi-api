@@ -1,4 +1,6 @@
 const Nota = require("../Models/Nota");
+const Terapeuta = require("../Models/Terapeuta");
+const { obtenerFechaComponent } = require("../utils/fechas");
 
 exports.verNotas = async (req, res, next) => {
   try {
@@ -8,42 +10,32 @@ exports.verNotas = async (req, res, next) => {
     return res.status(500).json("Algo ha salido mal");
   }
 };
-exports.verNotasTerapeuta = async (req, res, next) => {
-  let { id_terapeuta } = req.params;
-  let { id_paciente } = req.query;
-  try {
-    let notas = await Nota.query()
-      .joinRelated("[cita_nota as cita]")
-      .where((builder) => {
-        builder
-          .where("cita.id_terapeuta", "=", id_terapeuta)
-          .orWhereIn(
-            "notas.id",
-            Nota.query()
-              .joinRelated("terapeuta_compartida as terapeuta")
-              .where("terapeuta.id", "=", id_terapeuta)
-              .select("notas.id")
-          );
-      })
-      .modify((builder) => {
-        if (id_paciente) {
-          console.log({ id_paciente });
-          builder.andWhere("cita.id_paciente", "=", id_paciente);
-        }
-      });
 
-
-    return res.status(200).json(notas);
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json("Algo ha salido mal");
-  }
-};
 exports.crearNota = async (req, res, next) => {
-  let { body } = req;
+  let { nota:notaContent, id_terapeuta } = req.body;
   try {
-    let nota = await Nota.query().insertAndFetch(body);
-    return res.status(201).json(nota);
+    let { id_cita } = notaContent;
+    let nota = await Nota.query()
+      .where("id_cita", "=", id_cita)
+      .limit(1)
+      .first();
+    if (nota) {
+      return res
+        .status(403)
+        .json(
+          "No puedes crear una nota, pues la cita asociada ya cuenta con una nota creada"
+        );
+    }
+    let paciente = await Terapeuta.query()
+      .withGraphJoined("pacientes.[citas]")
+      .where("pacientes:citas.id", "=", id_cita)
+      .andWhere("terapeuta.id", "=", id_terapeuta)
+      .limit(1)
+      .first();
+    console.log(paciente);
+
+    // let nota = await Nota.query().insertAndFetch(body);
+    return res.status(201).json(null);
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo ha salido mal");
@@ -100,3 +92,47 @@ exports.modificarNota = async (req, res, next) => {
     return res.status(500).json("Algo ha salido mal");
   }
 };
+
+exports.verNotasTerapeuta = async (req, res, next) => {
+  let { id_terapeuta } = req.params;
+  let { id_paciente } = req.query;
+  try {
+    let notas = await Nota.query()
+      .joinRelated("[cita_nota as cita]")
+      .where((builder) => {
+        builder
+          .where("cita.id_terapeuta", "=", id_terapeuta)
+          .orWhereIn(
+            "notas.id",
+            Nota.query()
+              .joinRelated("terapeuta_compartida as terapeuta")
+              .where("terapeuta.id", "=", id_terapeuta)
+              .select("notas.id")
+          );
+      })
+      .modify((builder) => {
+        if (id_paciente) {
+          console.log({ id_paciente });
+          builder.andWhere("cita.id_paciente", "=", id_paciente);
+        }
+      })
+      .orderBy("fecha_edicion");
+    notas = agruparPorFechas(notas);
+    return res.status(200).json(notas);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+
+function agruparPorFechas(notas) {
+  let fechas = {};
+  notas.forEach((nota) => {
+    let fecha = obtenerFechaComponent(nota.fecha_edicion);
+    if (!fechas[fecha]) {
+      fechas[fecha] = [];
+    }
+    fechas[fecha].push(nota);
+  });
+  return fechas;
+}

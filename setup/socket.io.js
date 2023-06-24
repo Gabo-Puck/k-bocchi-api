@@ -1,4 +1,6 @@
 const { Server } = require("socket.io");
+const { obtenerFechaActualMexico, obtenerFechaComponent, obtenerFechaHoraComponent } = require("../utils/fechas");
+const Mensaje = require("../Models/Mensaje");
 let connectedUsers = [];
 const addUsuarioConectado = (usuario) => {
   let x = connectedUsers.find((u) => usuario.id == u.id);
@@ -54,10 +56,16 @@ function initServer(httpServer) {
       //hacer algo para guardar mensaje
       //enviarlo al destinatario
       console.log({to,contenido});
-      let fecha = new Date(Date.now())
-        .toISOString()
-        .slice(0, 19)
-        .replace("T", " ");
+      let fecha = obtenerFechaHoraComponent();
+      let mensaje = {
+        id_from: socket.data.id,
+        id_to: to,
+        fecha,
+        contenido: contenido
+      }
+
+      await Mensaje.query().insert(mensaje);
+
       io.to(to).emit("mensajes:recibido", {
         nombre: socket.data.nombre,
         from: socket.data.id,
@@ -65,7 +73,7 @@ function initServer(httpServer) {
         fecha,
       });
     });
-
+    
     socket.on("disconnecting", async () => {
       let sockets = await io.in("room").fetchSockets();
       // connectedUsers.forEach((user) => {
