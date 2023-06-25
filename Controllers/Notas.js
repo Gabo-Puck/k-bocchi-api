@@ -60,7 +60,6 @@ exports.validarAutoridad = async (req, res, next) => {
     if (cita.id_terapeuta !== Number(id_terapeuta))
       return res.status(403).json("No tienes acceso para manipular esta nota");
     res.nota = nota;
-    nota.$query().patchAndFetch();
     next();
   } catch (err) {
     console.log(err);
@@ -91,8 +90,20 @@ exports.modificarNota = async (req, res, next) => {
     }
     if (partialNota.id_cita !== nota.id_cita)
       return res.status(400).json("No se puede modificar la cita de una nota");
-    let resultado = await nota.$query().patchAndFetch(partialNota);
-    return res.status(200).json(resultado);
+    await nota.$query().patchAndFetch(partialNota);
+    let modificado = await nota
+      .$query()
+      .withGraphJoined("[cita_nota as cita.[terapeuta_datos.usuario]]")
+      .modifyGraph("cita", (builder) => {
+        builder.select("id", "id_terapeuta", "fecha", "id_paciente");
+      })
+      .modifyGraph("cita.terapeuta_datos", (builder) => {
+        builder.select("id", "id_usuario");
+      })
+      .modifyGraph("cita.terapeuta_datos.usuario", (builder) => {
+        builder.select("id", "rol", "nombre", "foto_perfil");
+      });
+    return res.status(200).json(modificado);
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo ha salido mal");
@@ -131,7 +142,7 @@ exports.verNotasTerapeuta = async (req, res, next) => {
       .modifyGraph("cita.terapeuta_datos.usuario", (builder) => {
         builder.select("id", "rol", "nombre", "foto_perfil");
       })
-      .orderBy("fecha_edicion");
+      .orderBy("fecha_edicion", "DESC");
     notas = agruparPorFechas(notas);
     return res.status(200).json(notas);
   } catch (err) {
