@@ -149,8 +149,14 @@ router.post("/", crearNota);
  *          application/json:
  *            schema:
  *              type: integer
- *      "403":
+ *      "401":
  *        description: Devuelve un mensaje indicando que el usuario no tiene acceso a esta cita
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "403":
+ *        description: Devuelve un mensaje indicando que la nota no se ha podido crear por algún motivo
  *        content:
  *          application/json:
  *            schema:

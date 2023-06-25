@@ -12,7 +12,7 @@ exports.verNotas = async (req, res, next) => {
 };
 
 exports.crearNota = async (req, res, next) => {
-  let { nota:notaContent, id_terapeuta } = req.body;
+  let { nota: notaContent, id_terapeuta } = req.body;
   try {
     let { id_cita } = notaContent;
     let nota = await Nota.query()
@@ -29,13 +29,19 @@ exports.crearNota = async (req, res, next) => {
     let paciente = await Terapeuta.query()
       .withGraphJoined("pacientes.[citas]")
       .where("pacientes:citas.id", "=", id_cita)
-      .andWhere("terapeuta.id", "=", id_terapeuta)
+      .andWhere("pacientes:citas.id_terapeuta", "=", id_terapeuta)
       .limit(1)
-      .first();
-    console.log(paciente);
+      .first()
+      .debug();
+    console.log({ paciente });
+    if (!paciente) {
+      return res
+        .status(401)
+        .json("Este paciente no tiene relación alguna con el terapeuta");
+    }
 
-    // let nota = await Nota.query().insertAndFetch(body);
-    return res.status(201).json(null);
+    let notaCreada = await Nota.query().insertAndFetch(notaContent);
+    return res.status(201).json(notaCreada);
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo ha salido mal");
@@ -98,7 +104,7 @@ exports.verNotasTerapeuta = async (req, res, next) => {
   let { id_paciente } = req.query;
   try {
     let notas = await Nota.query()
-      .joinRelated("[cita_nota as cita]")
+      .withGraphJoined("[cita_nota as cita.[terapeuta_datos.usuario]]")
       .where((builder) => {
         builder
           .where("cita.id_terapeuta", "=", id_terapeuta)
@@ -115,6 +121,15 @@ exports.verNotasTerapeuta = async (req, res, next) => {
           console.log({ id_paciente });
           builder.andWhere("cita.id_paciente", "=", id_paciente);
         }
+      })
+      .modifyGraph("cita", (builder) => {
+        builder.select("id", "id_terapeuta", "fecha", "id_paciente");
+      })
+      .modifyGraph("cita.terapeuta_datos", (builder) => {
+        builder.select("id", "id_usuario");
+      })
+      .modifyGraph("cita.terapeuta_datos.usuario", (builder) => {
+        builder.select("id", "rol", "nombre", "foto_perfil");
       })
       .orderBy("fecha_edicion");
     notas = agruparPorFechas(notas);
