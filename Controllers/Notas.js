@@ -41,6 +41,7 @@ exports.crearNota = async (req, res, next) => {
     }
 
     let notaCreada = await Nota.query().insertAndFetch(notaContent);
+    notaCreada = await fetchNota(notaCreada);
     return res.status(201).json(notaCreada);
   } catch (err) {
     console.log(err);
@@ -81,6 +82,26 @@ exports.eliminarNota = async (req, res, next) => {
   }
 };
 
+async function fetchNota(nota){
+  try{
+    return await nota
+    .$query()
+    .withGraphJoined("[cita_nota as cita.[terapeuta_datos.usuario]]")
+    .modifyGraph("cita", (builder) => {
+      builder.select("id", "id_terapeuta", "fecha", "id_paciente");
+    })
+    .modifyGraph("cita.terapeuta_datos", (builder) => {
+      builder.select("id", "id_usuario");
+    })
+    .modifyGraph("cita.terapeuta_datos.usuario", (builder) => {
+      builder.select("id", "rol", "nombre", "foto_perfil");
+    });
+  }catch(err){
+    console.log(err);
+    throw err;
+  }
+}
+
 exports.modificarNota = async (req, res, next) => {
   let { nota: partialNota } = req.body;
   let { nota } = res;
@@ -91,18 +112,7 @@ exports.modificarNota = async (req, res, next) => {
     if (partialNota.id_cita !== nota.id_cita)
       return res.status(400).json("No se puede modificar la cita de una nota");
     await nota.$query().patchAndFetch(partialNota);
-    let modificado = await nota
-      .$query()
-      .withGraphJoined("[cita_nota as cita.[terapeuta_datos.usuario]]")
-      .modifyGraph("cita", (builder) => {
-        builder.select("id", "id_terapeuta", "fecha", "id_paciente");
-      })
-      .modifyGraph("cita.terapeuta_datos", (builder) => {
-        builder.select("id", "id_usuario");
-      })
-      .modifyGraph("cita.terapeuta_datos.usuario", (builder) => {
-        builder.select("id", "rol", "nombre", "foto_perfil");
-      });
+    let modificado = await fetchNota(nota)
     return res.status(200).json(modificado);
   } catch (err) {
     console.log(err);

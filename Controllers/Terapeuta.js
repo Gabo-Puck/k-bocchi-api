@@ -274,7 +274,6 @@ exports.verPacientesBitacora = async (req, res, next) => {
           order: "desc",
         },
       ])
-
       .debug();
     p = p.map((p) => {
       let { usuario } = { ...p };
