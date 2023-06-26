@@ -13,6 +13,7 @@ var utilidadesRouter = require("./routes/utilidades");
 var citasRouter = require("./routes/citas");
 var notasRouter = require("./routes/notas");
 var mensajesRouter = require("./routes/mensajes");
+var notificacionesRouter = require("./routes/notificaciones");
 var fileUpload = require("express-fileupload");
 var { knex } = require("./setup/knexfile");
 
@@ -38,8 +39,6 @@ const admin = require("firebase-admin");
 const serviceAccount = require("./kbocchi-1254b-firebase-adminsdk-9ltt9-16cf6fa56d.json");
 const { validateCedula } = require("./modules/vision/cloudVision");
 
-
-
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
@@ -60,6 +59,7 @@ app.use("/docs", swaggerUI.serve, swaggerUI.setup(swaggerJSDOC(swaggerSpec)));
 app.use("/citas", citasRouter);
 app.use("/notas", notasRouter);
 app.use("/mensajes", mensajesRouter);
+app.use("/notificaciones", notificacionesRouter);
 app.use("/", indexRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
