@@ -1,4 +1,5 @@
 const Nota = require("../Models/Nota");
+const Paciente = require("../Models/Paciente");
 const Terapeuta = require("../Models/Terapeuta");
 const { obtenerFechaComponent } = require("../utils/fechas");
 
@@ -82,21 +83,50 @@ exports.eliminarNota = async (req, res, next) => {
   }
 };
 
-async function fetchNota(nota){
-  try{
-    return await nota
-    .$query()
-    .withGraphJoined("[cita_nota as cita.[terapeuta_datos.usuario]]")
-    .modifyGraph("cita", (builder) => {
-      builder.select("id", "id_terapeuta", "fecha", "id_paciente");
-    })
-    .modifyGraph("cita.terapeuta_datos", (builder) => {
-      builder.select("id", "id_usuario");
-    })
-    .modifyGraph("cita.terapeuta_datos.usuario", (builder) => {
-      builder.select("id", "rol", "nombre", "foto_perfil");
+exports.compartirNotas = async (req, res, next) => {
+  let grafo = req.body;
+
+  try {
+    let {
+      id: id_paciente,
+      terapeutas: [{ id: id_terapeuta }],
+    } = grafo;
+    let paciente = await Paciente.query()
+      .findById(id_paciente)
+      .joinRelated("terapeutas")
+      .where("terapeutas.id", "=", id_terapeuta);
+    if (!paciente) {
+      return res
+        .status(403)
+        .json("Este paciente no tiene relación con dicho terapeuta");
+    }
+    let resultado = await Paciente.query().upsertGraphAndFetch(grafo, {
+      noDelete: ["terapeutas"],
+      noUnrelate: ["terapeutas"],
+      relate: ["terapeutas.notas_compartidas"],
     });
-  }catch(err){
+    return res.status(200).json(resultado);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+
+async function fetchNota(nota) {
+  try {
+    return await nota
+      .$query()
+      .withGraphJoined("[cita_nota as cita.[terapeuta_datos.usuario]]")
+      .modifyGraph("cita", (builder) => {
+        builder.select("id", "id_terapeuta", "fecha", "id_paciente");
+      })
+      .modifyGraph("cita.terapeuta_datos", (builder) => {
+        builder.select("id", "id_usuario");
+      })
+      .modifyGraph("cita.terapeuta_datos.usuario", (builder) => {
+        builder.select("id", "rol", "nombre", "foto_perfil");
+      });
+  } catch (err) {
     console.log(err);
     throw err;
   }
@@ -112,7 +142,7 @@ exports.modificarNota = async (req, res, next) => {
     if (partialNota.id_cita !== nota.id_cita)
       return res.status(400).json("No se puede modificar la cita de una nota");
     await nota.$query().patchAndFetch(partialNota);
-    let modificado = await fetchNota(nota)
+    let modificado = await fetchNota(nota);
     return res.status(200).json(modificado);
   } catch (err) {
     console.log(err);
@@ -120,6 +150,40 @@ exports.modificarNota = async (req, res, next) => {
   }
 };
 
+exports.verNotasPaciente = async (req, res, next) => {
+  let { id_paciente } = req.params;
+  try {
+    let notas = await Nota.query()
+      .withGraphJoined("[cita_nota as cita.[terapeuta_datos.usuario]]")
+      // .where((builder) => {
+      //   builder
+      //     .where("cita.id_terapeuta", "=", id_terapeuta)
+      //     .orWhereIn(
+      //       "notas.id",
+      //       Nota.query()
+      //         .joinRelated("terapeuta_compartida as terapeuta")
+      //         .where("terapeuta.id", "=", id_terapeuta)
+      //         .select("notas.id")
+      //     );
+      // })
+      .andWhere("cita.id_paciente", "=", id_paciente)
+      .modifyGraph("cita", (builder) => {
+        builder.select("id", "id_terapeuta", "fecha", "id_paciente");
+      })
+      .modifyGraph("cita.terapeuta_datos", (builder) => {
+        builder.select("id", "id_usuario");
+      })
+      .modifyGraph("cita.terapeuta_datos.usuario", (builder) => {
+        builder.select("id", "rol", "nombre", "foto_perfil");
+      })
+      .orderBy("fecha_edicion", "DESC");
+    notas = agruparPorFechas(notas);
+    return res.status(200).json(notas);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
 exports.verNotasTerapeuta = async (req, res, next) => {
   let { id_terapeuta } = req.params;
   let { id_paciente } = req.query;

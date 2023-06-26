@@ -6,6 +6,8 @@ const {
   validarAutoridad,
   modificarNota,
   verNotasTerapeuta,
+  verNotasPaciente,
+  compartirNotas,
 } = require("../Controllers/Notas");
 var router = express.Router();
 
@@ -254,5 +256,78 @@ router.patch("/", validarAutoridad, modificarNota);
  *          type: integer
  */
 router.get("/terapeuta/:id_terapeuta", verNotasTerapeuta);
+/**
+ * @swagger
+ * /notas/paciente/{id_paciente}:
+ *  get:
+ *    summary: Permite obtener las notas de un paciente
+ *    description: Permite obtener todas las notas de un paciente.
+ *    tags: [Notas]
+ *    responses:
+ *      "201":
+ *        description: Devuelve un arreglo con las notas del paciente
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                  $ref: '#/components/schemas/Nota'
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *  parameters:
+ *      - in: path
+ *        name: id_paciente
+ *        required: true
+ *        schema:
+ *          type: integer
+ */
+router.get("/paciente/:id_paciente", verNotasPaciente);
+/**
+ * @swagger
+ * /notas/compartir:
+ *  patch:
+ *    summary: Permite compartir las notas de un paciente con sus terapeutas
+ *    requestBody:
+ *        required: true
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                id:
+ *                  type: integer
+ *                terapeutas:
+ *                  type: array
+ *                  items:
+ *                    type: object
+ *                    properties:
+ *                      id:
+ *                        type: integer
+ *                      notas_compartidas:
+ *                        type: array
+ *                        items:
+ *                          type: object
+ *                          properties:
+ *                            id:
+ *                              type: integer
+ *                
+ *    description: Las relaciones que se reciben son las creadas, las que no se encuentren seran ELIMINADAS.
+ *    tags: [Notas]
+ *    
+ *    responses:
+ *      "201":
+ *        description: Devuelve un arreglo de las relaciones creadas
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ */
+router.patch("/compartir", compartirNotas);
 
 module.exports = router;
