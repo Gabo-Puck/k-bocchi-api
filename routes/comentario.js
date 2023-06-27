@@ -1,5 +1,14 @@
 var express = require("express");
-const { verComentarios, crearComentario, eliminarComentario, editarComentario, verComentario, verComentariosPaciente, verComentariosTerapeuta } = require("../Controllers/Comentario");
+const {
+  verComentarios,
+  crearComentario,
+  eliminarComentario,
+  editarComentario,
+  verComentario,
+  verComentariosPaciente,
+  verComentariosTerapeuta,
+  validarComentario,
+} = require("../Controllers/Comentario");
 var router = express.Router();
 
 /**
@@ -94,7 +103,7 @@ router.get("/", verComentarios);
  *             schema:
  *               type: string
  */
-router.post("/", crearComentario);
+router.post("/", validarComentario, crearComentario);
 /**
  * @swagger
  * /comentarios:
@@ -168,6 +177,12 @@ router.delete("/", eliminarComentario);
  *          application/json:
  *            schema:
  *              type: string
+ *      "403":
+ *        description: Devuelve un mensaje indicando que el terapeuta no tiene relación con el paciente
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
  *      "500":
  *         description: Devuelve un mensaje indicando que algo salió mal
  *         content:
@@ -175,7 +190,7 @@ router.delete("/", eliminarComentario);
  *             schema:
  *               type: string
  */
-router.patch("/", editarComentario);
+router.patch("/", validarComentario, editarComentario);
 /**
  * @swagger
  * /comentarios/{id}:

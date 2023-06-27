@@ -3,7 +3,24 @@ const Paciente = require("../Models/Paciente");
 const Terapeuta = require("../Models/Terapeuta");
 
 exports.validarComentario = async (req, res, next) => {
+  let id_terapeuta, id_paciente;
+  if (req.body.comentario) {
+    id_paciente = req.body.comentario.id_paciente;
+    id_terapeuta = req.body.comentario.id_terapeuta;
+  } else {
+    id_paciente = req.body.id_paciente;
+    id_terapeuta = req.body.id_terapeuta;
+  }
+
   try {
+    let paciente = await Paciente.query()
+      .findById(id_paciente)
+      .joinRelated("terapeutas")
+      .where("terapeutas.id", "=", id_terapeuta);
+    if (!paciente) {
+      return res.status(403).json("No tiene relación con el paciente");
+    }
+    next();
   } catch (error) {
     console.log(error);
     return res.status(500).json("Algo ha salido mal");
@@ -21,12 +38,14 @@ exports.crearComentario = async (req, res, next) => {
 };
 exports.editarComentario = async (req, res, next) => {
   let { id, comentario } = req.body;
+  let { id_terapeuta, id_paciente } = comentario;
   try {
-    let comentarioEncontrado = await Comentario.query().findById(id);
+    let comentarioEncontrado = await Comentario.query()
+      .findById(id)
+      .andWhere("id_terapeuta", "=", id_terapeuta)
+      .andWhere("id_paciente", "=", id_paciente);
     if (!comentarioEncontrado)
       return res.status(404).json("No se encontro el comentario a editar");
-    if (comentario.id || comentario.id_paciente || comentario.id_terapeuta)
-      return res.status(400).json("No se puede modificar las id");
     let comentarioEditado = await comentarioEncontrado
       .$query()
       .patchAndFetch(comentario);
