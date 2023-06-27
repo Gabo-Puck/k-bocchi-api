@@ -1,3 +1,4 @@
+const { raw } = require("objection");
 const Nota = require("../Models/Nota");
 const Paciente = require("../Models/Paciente");
 const Terapeuta = require("../Models/Terapeuta");
@@ -101,7 +102,8 @@ exports.compartirNotas = async (req, res, next) => {
         .json("Este paciente no tiene relación con dicho terapeuta");
     }
     let resultado = await Paciente.query().upsertGraphAndFetch(grafo, {
-      noDelete: ["terapeutas"],
+      noDelete: ["terapeutas","terapeutas.notas_compartidas"],
+      unrelate:["terapeutas.notas_compartidas"],
       noUnrelate: ["terapeutas"],
       relate: ["terapeutas.notas_compartidas"],
     });
@@ -177,6 +179,47 @@ exports.verNotasPaciente = async (req, res, next) => {
         builder.select("id", "rol", "nombre", "foto_perfil");
       })
       .orderBy("fecha_edicion", "DESC");
+    notas = agruparPorFechas(notas);
+    return res.status(200).json(notas);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+exports.verNotasPacienteCompartidas = async (req, res, next) => {
+  let { id_paciente, id_terapeuta } = req.params;
+  try {
+    let notas = await Nota.query()
+      .select("notas.*")
+      .select(
+        raw(`FN_TERAPEUTA_NOTA_COMPARTIDA(notas.id, ${id_terapeuta})`).as(
+          "isCompartida"
+        )
+      )
+      .withGraphJoined("[cita_nota as cita.[terapeuta_datos.usuario]]")
+      // .where((builder) => {
+      //   builder
+      //     .where("cita.id_terapeuta", "=", id_terapeuta)
+      //     .orWhereIn(
+      //       "notas.id",
+      //       Nota.query()
+      //         .joinRelated("terapeuta_compartida as terapeuta")
+      //         .where("terapeuta.id", "=", id_terapeuta)
+      //         .select("notas.id")
+      //     );
+      // })
+      .andWhere("cita.id_paciente", "=", id_paciente)
+      .modifyGraph("cita", (builder) => {
+        builder.select("id", "id_terapeuta", "fecha", "id_paciente");
+      })
+      .modifyGraph("cita.terapeuta_datos", (builder) => {
+        builder.select("id", "id_usuario");
+      })
+      .modifyGraph("cita.terapeuta_datos.usuario", (builder) => {
+        builder.select("id", "rol", "nombre", "foto_perfil");
+      })
+      .orderBy("fecha_edicion", "DESC")
+      .debug();
     notas = agruparPorFechas(notas);
     return res.status(200).json(notas);
   } catch (err) {
