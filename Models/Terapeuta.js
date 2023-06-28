@@ -62,15 +62,28 @@ class Terapeuta extends Model {
       notas_compartidas: {
         relation: Model.ManyToManyRelation,
         modelClass: Nota,
-        join:{
+        join: {
           from: "terapeutas.id",
-          through:{
+          through: {
             modelClass: NotaCompartida,
             from: "nota_compartida.id_terapeuta",
-            to:"nota_compartida.id_nota"
+            to: "nota_compartida.id_nota",
           },
-          to: "notas.id"
-        }
+          to: "notas.id",
+        },
+      },
+      paciente_resenado: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Paciente,
+        join: {
+          from: "terapeutas.id",
+          through: {
+            modelClass: Resena,
+            from: "resena.id_terapeuta",
+            to: "resena.id_paciente",
+          },
+          to: "pacientes.id",
+        },
       },
     };
   }

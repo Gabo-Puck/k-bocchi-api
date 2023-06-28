@@ -48,6 +48,19 @@ class Paciente extends Model {
           to: "terapeutas.id",
         },
       },
+      terapeutas_resenados: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Terapeuta,
+        join: {
+          from: "pacientes.id",
+          through: {
+            modelClass: Resena,
+            from: "resenas.id_paciente",
+            to: "resenas.id_terapeuta",
+          },
+          to: "terapeutas.id",
+        },
+      },
     };
   }
 }

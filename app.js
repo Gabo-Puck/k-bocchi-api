@@ -15,6 +15,7 @@ var notasRouter = require("./routes/notas");
 var mensajesRouter = require("./routes/mensajes");
 var notificacionesRouter = require("./routes/notificaciones");
 var comentariosRouter = require("./routes/comentario");
+var resenasRouter = require("./routes/resenas");
 var fileUpload = require("express-fileupload");
 var { knex } = require("./setup/knexfile");
 
@@ -62,6 +63,7 @@ app.use("/notas", notasRouter);
 app.use("/mensajes", mensajesRouter);
 app.use("/notificaciones", notificacionesRouter);
 app.use("/comentarios", comentariosRouter);
+app.use("/resenas", resenasRouter);
 app.use("/", indexRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
