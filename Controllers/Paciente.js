@@ -3,6 +3,7 @@ const Cita = require("../Models/Cita");
 const Terapeuta = require("../Models/Terapeuta");
 const { patternFecha } = require("../utils/fechas");
 const date = require("date-and-time");
+const Paciente = require("../Models/Paciente");
 exports.verCitasPaciente = async (req, res, next) => {
   let { id } = req.params;
   let { fecha } = req.query;
@@ -53,6 +54,42 @@ exports.verTerapeutasPaciente = async (req, res, next) => {
         );
       });
     return res.status(200).json(terapeutas);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+
+exports.verPermisosTerapeuta = async (req, res, next) => {
+  let { id_paciente, id_terapeuta } = req.params;
+  let permisos = {
+    crearResena: null,
+    editarResena: null,
+    crearComentario: null,
+  };
+  try {
+    let terapeuta = await Paciente.query()
+      .findById(id_paciente)
+      .withGraphJoined(
+        "[terapeutas as crearComentario,terapeutas_resenados as crearResena,resenas]"
+      )
+      .modifyGraph("crearComentario", (builder) => {
+        builder.where("id", "=", id_terapeuta);
+      })
+      .modifyGraph("crearResena", (builder) => {
+        builder.where("id", "=", id_terapeuta);
+      })
+      .modifyGraph("resenas", (builder) => {
+        builder.findOne({ id_terapeuta, id_paciente });
+      });
+    permisos.crearComentario = terapeuta.crearComentario.length > 0 ? 1 : 0;
+    permisos.crearResena =
+      terapeuta.crearComentario.length > 0 && terapeuta.crearResena.length === 0
+        ? 1
+        : 0;
+    permisos.editarResena = terapeuta.crearResena.length === 1 ? 1 : 0;
+    console.log({ terapeuta });
+    return res.status(200).json({ ...permisos, resena: terapeuta.resenas[0] });
   } catch (error) {
     console.log(error);
     return res.status(500).json("Algo ha salido mal");

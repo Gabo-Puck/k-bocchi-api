@@ -277,5 +277,6 @@ function agruparPorFechas(notas) {
     }
     fechas[fecha].push(nota);
   });
+  fechas = Object.keys(fechas).map((f)=>({header:f,notas:fechas[f]}))
   return fechas;
 }

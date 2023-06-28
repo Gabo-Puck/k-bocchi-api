@@ -23,7 +23,7 @@ exports.verTerapeutaDetalles = async (req, res, next) => {
       .findOne({
         "terapeutas.id": id_terapeuta,
       })
-      .withGraphJoined(
+      .withGraphFetched(
         "[comentarios.[comentario_paciente.[resenas,usuario]],resenas,usuario]"
       )
       .modifyGraph("comentarios.[comentario_paciente.resenas]", (builder) => {
@@ -32,6 +32,16 @@ exports.verTerapeutaDetalles = async (req, res, next) => {
       .modifyGraph("resenas", (builder) => {
         builder.avg("estrellas as promedio");
         builder.groupBy("id_terapeuta");
+      })
+      .modifyGraph("comentarios", (builder) => {
+        builder.select("comentarios.*");
+        builder
+          .select(
+            raw(
+              `FN_SELEC_FECHA(comentarios.fecha_edicion,comentarios.fecha_creacion)`
+            ).as("fecha_ordenacion")
+          )
+          .orderBy("fecha_ordenacion","DESC");
       });
     if (!terapeuta) return res.status(404).json("No existe ese terapeuta");
 
@@ -224,7 +234,10 @@ exports.verPacientesBitacora = async (req, res, next) => {
   try {
     console.log({ x: obtenerFechaComponent() });
     let f = obtenerFechaActualMexico();
-    let fechaActual = date.parse(obtenerFechaTiempoComponent(f), patternFechaCompleta);
+    let fechaActual = date.parse(
+      obtenerFechaTiempoComponent(f),
+      patternFechaCompleta
+    );
     let fechaLimite = date.addDays(fechaActual, 1);
     fechaLimite = date.addSeconds(fechaLimite, -1);
     let hora_consultada = obtenerHoraComponent(f);
