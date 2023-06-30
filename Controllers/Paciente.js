@@ -82,12 +82,12 @@ exports.verPermisosTerapeuta = async (req, res, next) => {
       .modifyGraph("resenas", (builder) => {
         builder.findOne({ id_terapeuta, id_paciente });
       });
-    permisos.crearComentario = terapeuta.crearComentario.length > 0 ? 1 : 0;
     permisos.crearResena =
       terapeuta.crearComentario.length > 0 && terapeuta.crearResena.length === 0
         ? 1
         : 0;
     permisos.editarResena = terapeuta.crearResena.length === 1 ? 1 : 0;
+    permisos.crearComentario = (terapeuta.crearComentario.length > 0 && permisos.editarResena === 1) ? 1 : 0;
     console.log({ terapeuta });
     return res.status(200).json({ ...permisos, resena: terapeuta.resenas[0] });
   } catch (error) {

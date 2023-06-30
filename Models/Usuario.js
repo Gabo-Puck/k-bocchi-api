@@ -1,4 +1,5 @@
 const { Model } = require("objection");
+const Mensaje = require("./Mensaje");
 
 class Usuario extends Model {
   static get tableName() {
@@ -23,6 +24,35 @@ class Usuario extends Model {
         join: {
           from: "usuarios.id",
           to: "terapeutas.id_usuario",
+        },
+      },
+      mensajes_enviados: {
+        relation: Model.HasManyRelation,
+        modelClass: Mensaje,
+        join: {
+          from: "usuarios.id",
+          to: "mensajes.id_from",
+        },
+      },
+      mensajes_recibidos: {
+        relation: Model.HasManyRelation,
+        modelClass: Mensaje,
+        join: {
+          from: "usuarios.id",
+          to: "mensajes.id_to",
+        },
+      },
+      chats: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Usuario,
+        join: {
+          from: "usuarios.id",
+          through:{
+            modelClass: Mensaje,
+            from:"mensajes.id_from",
+            to:"mensajes.id_to"
+          },
+          to: "usuarios.id",
         },
       },
     };

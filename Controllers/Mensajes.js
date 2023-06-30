@@ -1,4 +1,6 @@
+const { ref } = require("objection");
 const Mensaje = require("../Models/Mensaje");
+const Usuario = require("../Models/Usuario");
 
 exports.crearMensaje = async (req, res, next) => {
   let { mensaje: mensajeNuevo } = req.body;
@@ -72,6 +74,79 @@ exports.verChat = async (req, res, next) => {
       })
       .orderBy("fecha", "ASC");
     return res.status(200).json(mensajesChat);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+
+exports.verChats = async (req, res, next) => {
+  let { id_usuario } = req.params;
+  try {
+    let usuarios = await Usuario.query()
+      
+
+      .distinct([
+        "usuarios.nombre",
+        "usuarios.foto_perfil",
+        "usuarios.id",
+        Mensaje.query()
+          .where((builder) => {
+            builder
+              .where("id_from", "=", id_usuario)
+              .andWhere("id_to", "=", ref("usuarios.id"));
+          })
+          .orWhere((builder) => {
+            builder
+              .where("id_to", "=", id_usuario)
+              .andWhere("id_from", "=", ref("usuarios.id"));
+          })
+          .orderBy("fecha", "DESC")
+          .select("fecha")
+          .as("fecha")
+          .limit(1),
+        Mensaje.query()
+          .where((builder) => {
+            builder
+              .where("id_from", "=", id_usuario)
+              .andWhere("id_to", "=", ref("usuarios.id"));
+          })
+          .orWhere((builder) => {
+            builder
+              .where("id_to", "=", id_usuario)
+              .andWhere("id_from", "=", ref("usuarios.id"));
+          })
+          .orderBy("fecha", "DESC")
+          .select("mensajes.id")
+          .as("id_mensaje")
+          .limit(1),
+        Mensaje.query()
+          .where((builder) => {
+            builder
+              .where("id_from", "=", id_usuario)
+              .andWhere("id_to", "=", ref("usuarios.id"));
+          })
+          .orWhere((builder) => {
+            builder
+              .where("id_to", "=", id_usuario)
+              .andWhere("id_from", "=", ref("usuarios.id"));
+          })
+          .orderBy("fecha", "DESC")
+          .select("contenido")
+          .as("contenido")
+          .limit(1),
+      ])
+      .joinRelated("mensajes_enviados")
+      .joinRelated("mensajes_recibidos")
+      .where("mensajes_recibidos.id_from", "=", id_usuario)
+      .orWhere("mensajes_enviados.id_to", "=", id_usuario)
+      .debug();
+    // .findById(id_usuario)
+    // .modifyGraph("mensajes",builder=>{
+    //   builder.wh
+    // });
+    // console.log({ usuarios });
+    return res.status(200).json(usuarios);
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo ha salido mal");

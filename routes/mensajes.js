@@ -1,5 +1,5 @@
 const express = require("express");
-const { crearMensaje, borrarMensaje, modificarMensaje, verMensajes, verChat } = require("../Controllers/Mensajes");
+const { crearMensaje, borrarMensaje, modificarMensaje, verMensajes, verChat, verChats } = require("../Controllers/Mensajes");
 var router = express.Router();
 
 /**
@@ -177,4 +177,31 @@ router.get("/", verMensajes);
  *          required: true
  */
 router.get("/chat/:id_to/:id_from", verChat);
+/**
+ * @swagger
+ * /mensajes/chats/{id_usuario}:
+ *  get:
+ *    summary: Permite obtener los chats del usuario
+ *    tags: [Mensajes]
+ *    responses:
+ *      "200":
+ *        description: Devuelve un arreglo con los chats del usuario
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                  $ref: '#/components/schemas/Usuario'
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *    parameters:
+ *        - in: path
+ *          name: id_usuario
+ *          required: true
+ */
+router.get("/chats/:id_usuario", verChats);
 module.exports = router;
