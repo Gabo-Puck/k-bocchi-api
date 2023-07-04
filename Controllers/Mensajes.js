@@ -48,19 +48,19 @@ exports.verChat = async (req, res, next) => {
   let { id_from, id_to } = req.params;
   try {
     let mensajesChat = await Mensaje.query()
-      .withGraphJoined("usuario.[paciente,terapeuta]")
+      .withGraphJoined("usuario_from.[paciente,terapeuta]")
       .where((builder) => {
         builder
           .where("mensajes.id_from", "=", id_from)
           .andWhere("mensajes.id_to", "=", id_to);
       })
-      .modifyGraph("usuario", (builder) => {
+      .modifyGraph("usuario_from", (builder) => {
         builder.select("nombre", "foto_perfil", "rol", "id");
       })
-      .modifyGraph("usuario.[terapeuta,paciente]", (builder) => {
+      .modifyGraph("usuario_from.[terapeuta,paciente]", (builder) => {
         builder.select("id");
       })
-      .modifyGraph("usuario.[terapeuta]", (builder) => {
+      .modifyGraph("usuario_from.[terapeuta]", (builder) => {
         builder.select(
           "nombre_del_consultorio",
           "numero_cedula",
@@ -84,8 +84,6 @@ exports.verChats = async (req, res, next) => {
   let { id_usuario } = req.params;
   try {
     let usuarios = await Usuario.query()
-      
-
       .distinct([
         "usuarios.nombre",
         "usuarios.foto_perfil",
@@ -136,10 +134,11 @@ exports.verChats = async (req, res, next) => {
           .as("contenido")
           .limit(1),
       ])
-      .joinRelated("mensajes_enviados")
-      .joinRelated("mensajes_recibidos")
+      .leftJoinRelated("mensajes_enviados")
+      .leftJoinRelated("mensajes_recibidos")
       .where("mensajes_recibidos.id_from", "=", id_usuario)
       .orWhere("mensajes_enviados.id_to", "=", id_usuario)
+      .orderBy("fecha", "DESC")
       .debug();
     // .findById(id_usuario)
     // .modifyGraph("mensajes",builder=>{

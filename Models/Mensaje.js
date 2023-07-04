@@ -1,7 +1,11 @@
 const { Model } = require("objection");
+const { obtenerFechaActualMexico } = require("../utils/fechas");
 class Mensaje extends Model {
   static get tableName() {
     return "mensajes";
+  }
+  $beforeInsert() {
+    this.fecha = obtenerFechaActualMexico().toISOString();
   }
   static get relationMappings() {
     const Usuario = require("./Usuario");
