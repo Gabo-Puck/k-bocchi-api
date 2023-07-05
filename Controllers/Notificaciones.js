@@ -3,7 +3,9 @@ const { generarNotificacion } = require("../utils/notificaciones");
 
 exports.crearNotificacion = async (req, res, next) => {
   try {
-    let notificacion = await generarNotificacion({...req.body});
+    let notificacion = await generarNotificacion({...req.body,payload:{
+      extras:"123"
+    }});
     return res.status(200).json(notificacion);
   } catch (err) {
     console.log(err);

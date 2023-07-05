@@ -6,6 +6,7 @@ const {
 } = require("../utils/fechas");
 const Mensaje = require("../Models/Mensaje");
 const Usuario = require("../Models/Usuario");
+const { generarNotificacion } = require("../utils/notificaciones");
 let connectedUsers = [];
 const addUsuarioConectado = (usuario) => {
   let x = connectedUsers.find((u) => usuario.id == u.id);
@@ -69,7 +70,13 @@ function initServer(httpServer) {
       
       let { id, fecha,id_to } = await Mensaje.query().insertAndFetch(mensaje);
       let { foto_perfil } = await Usuario.query().findById(socket.data.id);
-
+      generarNotificacion({
+        contexto_movil:"chat",
+        contexto_web:"app/chat",
+        descripcion:`${socket.data.nombre} dice: ${contenido}`,
+        titulo:"Nuevo mensaje",
+        id_usuario:id_to,
+      })
       io.to([to, socket.data.id]).emit("mensajes:recibido", {
         id,
         id_from: socket.data.id,

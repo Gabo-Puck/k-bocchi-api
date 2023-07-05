@@ -21,7 +21,9 @@ exports.verRegistrationTokensUsuario = async (req, res, next) => {
 exports.crearRegistrationToken = async (req, res, next) => {
   try {
     let { id_usuario, token } = req.body;
-    let tokenCreado = await this.crear(token, id_usuario);
+    let tokenRepetido = await ver(token);
+    if (tokenRepetido) return res.status(200).json(tokenRepetido);
+    let tokenCreado = await crear(token, id_usuario);
     return res.status(200).json(tokenCreado);
   } catch (error) {
     console.log(error);
@@ -45,7 +47,7 @@ const crear = async (token, id_usuario) => {
       id_usuario,
     });
     return tokenCreado;
-  } catch (err) {
+  } catch (error) {
     console.log(error);
     throw new Error("Algo ha salido mal");
   }
@@ -54,7 +56,7 @@ const eliminar = async (token) => {
   try {
     let tokenEliminado = await RegistrationToken.query().deleteById(token);
     return tokenEliminado;
-  } catch (err) {
+  } catch (error) {
     console.log(error);
     throw new Error("Algo ha salido mal");
   }
@@ -63,7 +65,7 @@ const ver = async (token) => {
   try {
     let tokenEncontrado = await RegistrationToken.query().findById(token);
     return tokenEncontrado;
-  } catch (err) {
+  } catch (error) {
     console.log(error);
     throw new Error("Algo ha salido mal");
   }
@@ -76,7 +78,7 @@ const verTokensUsuario = async (id_usuario) => {
       id_usuario
     );
     return tokenEncontrado;
-  } catch (err) {
+  } catch (error) {
     console.log(error);
     throw new Error("Algo ha salido mal");
   }
@@ -90,13 +92,26 @@ const actualizar = async (token, id_usuario) => {
       }
     );
     return tokenActualizado;
-  } catch (err) {
+  } catch (error) {
+    console.log(error);
+    throw new Error("Algo ha salido mal");
+  }
+};
+const eliminarVarios = async (tokens) => {
+  try {
+    let tokensBorrados = await RegistrationToken.query()
+      .whereIn("token", tokens)
+      .delete()
+      .debug();
+    return tokensBorrados;
+  } catch (error) {
     console.log(error);
     throw new Error("Algo ha salido mal");
   }
 };
 exports.crear = crear;
 exports.eliminar = eliminar;
+exports.eliminarVarios = eliminarVarios;
 exports.ver = ver;
 exports.verTokensUsuario = verTokensUsuario;
 exports.actualizar = actualizar;

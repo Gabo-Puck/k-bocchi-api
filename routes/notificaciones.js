@@ -25,7 +25,10 @@ var router = express.Router();
  *        descripcion:
  *          type: string
  *          description: Es el cuerpo de la notificacion
- *        contexto:
+ *        contexto_movil:
+ *          type: string
+ *          description: Es el contexto asociado a la notificacion
+ *        contexto_web:
  *          type: string
  *          description: Es el contexto asociado a la notificacion
  *        fecha:
@@ -38,7 +41,8 @@ var router = express.Router();
  *          id: 10
  *          id_usuario: "16473224-ba24-4c60-9508-24b5e885fcdamock"
  *          descripcion: ¡Hola! ¿Como estas?
- *          contexto: /texto
+ *          contexto_web: /texto
+ *          contexto_movil: activity
  *          fecha: 2023-06-03T20:30:33.000Z
  *          titulo: Guillermo te ha mandado un mensaje
  */
