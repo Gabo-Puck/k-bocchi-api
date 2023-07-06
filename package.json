@@ -27,6 +27,7 @@
     "nodemailer": "^6.9.2",
     "objection": "^3.0.1",
     "puppeteer": "20.3.0",
+    "salted-md5": "^4.0.5",
     "socket.io": "^4.6.2",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.6.3",

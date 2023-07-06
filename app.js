@@ -17,6 +17,7 @@ var notificacionesRouter = require("./routes/notificaciones");
 var comentariosRouter = require("./routes/comentario");
 var resenasRouter = require("./routes/resenas");
 var registrationTokens = require("./routes/registrationTokens");
+var productosRouter = require("./routes/productos");
 var fileUpload = require("express-fileupload");
 var { knex } = require("./setup/knexfile");
 
@@ -44,7 +45,10 @@ const { validateCedula } = require("./modules/vision/cloudVision");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
+  storageBucket: process.env.BUCKET_URL
 });
+
+app.locals.bucket = admin.storage().bucket();
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -65,6 +69,7 @@ app.use("/mensajes", mensajesRouter);
 app.use("/notificaciones", notificacionesRouter);
 app.use("/comentarios", comentariosRouter);
 app.use("/resenas", resenasRouter);
+app.use("/productos", productosRouter);
 app.use("/fcmtokens", registrationTokens);
 app.use("/", indexRouter);
 // catch 404 and forward to error handler
