@@ -124,7 +124,7 @@ router.post("/", crearProducto);
 router.delete("/:id", eliminarProducto);
 /**
  * @swagger
- * /productos/{id_terapeuta}:
+ * /productos/terapeuta/{id_terapeuta}:
  *  get:
  *    summary: Permite ver los productos de un terapeuta
  *    tags: [productos]
@@ -148,7 +148,7 @@ router.delete("/:id", eliminarProducto);
  *        in: path
  *        required: true
  */
-router.get("/:id_terapeuta", verProductosTerapeuta);
+router.get("/terapeuta/:id_terapeuta", verProductosTerapeuta);
 /**
  * @swagger
  * /productos:
