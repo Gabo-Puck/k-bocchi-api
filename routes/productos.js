@@ -43,6 +43,9 @@ var router = express.Router();
  *        fecha_publicacion:
  *          type: string
  *          description: Es la fecha en la que se creo 
+ *        cantidad_vendida:
+ *          type: integer
+ *          description: La cantidad de producto vendida
  *      example:
  *          id: 1
  *          nombre: "Medicamento para el dolor"
@@ -53,6 +56,7 @@ var router = express.Router();
  *          categoria: "medicamento"
  *          id_terapeuta: 218
  *          fecha_publicacion: 2013-06-20 23:00:20
+ *          cantidad_vendida: 2
  *
  *
  */
@@ -83,7 +87,8 @@ var router = express.Router();
  *        content:
  *          application/json:
  *            schema:
- *              type: string
+ *              type: object
+ *              $ref: "#/components/schemas/Producto"
  *      500:
  *        description: Devuelve un mensaje de error del servidor
  *        content:

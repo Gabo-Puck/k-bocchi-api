@@ -8,6 +8,7 @@ class Producto extends Model {
   }
   $beforeInsert() {
     this.fecha_publicacion = obtenerFechaActualMexico().toISOString();
+    this.cantidad_vendida = 0;
   }
   static relationMappings() {
     const Ticket = require("./Ticket");
