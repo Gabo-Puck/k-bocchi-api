@@ -143,7 +143,7 @@ const verProductosTerapeuta = async (id_terapeuta) => {
       "id_terapeuta",
       "=",
       id_terapeuta
-    );
+    ).orderBy("fecha_publicacion","DESC");
     return producto;
   } catch (error) {
     console.log(error);
