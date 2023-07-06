@@ -40,6 +40,9 @@ var router = express.Router();
  *        id_terapeuta:
  *          type: string
  *          description: Es la id del terapeuta que vende el producto
+ *        fecha_publicacion:
+ *          type: string
+ *          description: Es la fecha en la que se creo 
  *      example:
  *          id: 1
  *          nombre: "Medicamento para el dolor"
@@ -49,6 +52,7 @@ var router = express.Router();
  *          imagen: "https://localhost:3000"
  *          categoria: "medicamento"
  *          id_terapeuta: 218
+ *          fecha_publicacion: 2013-06-20 23:00:20
  *
  *
  */

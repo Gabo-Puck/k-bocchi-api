@@ -1,11 +1,14 @@
 const { Model } = require("objection");
 const DetalleTicket = require("./DetalleTicket");
+const { obtenerFechaActualMexico } = require("../utils/fechas");
 
 class Producto extends Model {
   static get tableName() {
     return "productos";
   }
-
+  $beforeInsert() {
+    this.fecha_publicacion = obtenerFechaActualMexico().toISOString();
+  }
   static relationMappings() {
     const Ticket = require("./Ticket");
     const Terapeuta = require("./Terapeuta");
