@@ -10,6 +10,10 @@ class Producto extends Model {
     this.fecha_publicacion = obtenerFechaActualMexico().toISOString();
     this.cantidad_vendida = 0;
   }
+  $beforeUpdate(){
+    delete this.cantidad_vendida;
+    delete this.fecha_publicacion;
+  }
   static relationMappings() {
     const Ticket = require("./Ticket");
     const Terapeuta = require("./Terapeuta");
