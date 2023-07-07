@@ -162,8 +162,18 @@ exports.eliminarProducto = async (req, res, next) => {
 };
 exports.verProducto = async (req, res, next) => {
   try {
-    let {id} = req.params
-    let producto = await Producto.query().findById(id);
+    let { id } = req.params;
+    let fechaActual = obtenerFechaComponent();
+
+    let producto = await Producto.query()
+      .findById(id)
+      .select([
+        "productos.*",
+        raw(
+          `FN_PRODUCTO_NUEVO(productos.fecha_publicacion,"${fechaActual}")`
+        ).as("isNuevo"),
+        raw(`FN_HAS_STOCK(productos.stock)`).as("hasStock"),
+      ]);
     if (!producto) return res.status(404).json("No se encontro el producto");
     res.producto = producto;
     next();

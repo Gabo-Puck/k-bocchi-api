@@ -259,29 +259,6 @@ router.patch("/", editarProducto);
  *          description: Filtro para obtener productos publicados recientemente (1 semana)
  *          schema:
  *            type: number
- *        - in: query
- *          name: lat
- *          description: Filtro para la ubicacion, indica la latitud (son necesarios ambos para la distancia, lat y lng)
- *          schema:
- *            type: number
- *        - in: query
- *          name: lng
- *          description: Filtro para la ubicacion, indica la longitud (son necesarios ambos para la distancia, lat y lng)
- *          schema:
- *            type: number
- *        - in: query
- *          name: distancia
- *          description: Filtro para la ubicacion, indica la distancia máxima (son necesarios ambos para la distancia, lat y lng)
- *          schema:
- *            type: number
- *        - in: query
- *          name: con_consultorio
- *          description: filtro para terapeutas con consultorio
- *          schema:
- *            type: boolean
- *
- *
- *
  */
 router.get("/", verProductos);
 module.exports = router;
