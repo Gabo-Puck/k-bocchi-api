@@ -17,7 +17,7 @@ exports.verProductos = async (req, res, next) => {
         ).as("isNuevo"),
         raw(`FN_HAS_STOCK(productos.stock)`).as("hasStock"),
       ])
-      // .withGraphJoined("terapeuta.usuario")
+      .withGraphJoined("terapeuta.usuario")
       .modify((builder) => {
         if (palabra) {
           builder.where((b) => {
@@ -51,6 +51,12 @@ exports.verProductos = async (req, res, next) => {
             );
           });
         }
+      })
+      .modifyGraph("terapeuta", (builder) => {
+        builder.select("id", "id_usuario", "numero_cedula");
+      })
+      .modifyGraph("terapeuta.usuario", (builder) => {
+        builder.select("id", "nombre", "foto_perfil");
       })
       .orderBy("productos.fecha_publicacion", "DESC")
       .debug();
@@ -166,6 +172,8 @@ exports.verProducto = async (req, res, next) => {
     let fechaActual = obtenerFechaComponent();
 
     let producto = await Producto.query()
+      .withGraphJoined("terapeuta.usuario")
+
       .findById(id)
       .select([
         "productos.*",
@@ -173,7 +181,13 @@ exports.verProducto = async (req, res, next) => {
           `FN_PRODUCTO_NUEVO(productos.fecha_publicacion,"${fechaActual}")`
         ).as("isNuevo"),
         raw(`FN_HAS_STOCK(productos.stock)`).as("hasStock"),
-      ]);
+      ])
+      .modifyGraph("terapeuta", (builder) => {
+        builder.select("id", "id_usuario", "numero_cedula");
+      })
+      .modifyGraph("terapeuta.usuario", (builder) => {
+        builder.select("id", "nombre", "foto_perfil");
+      });
     if (!producto) return res.status(404).json("No se encontro el producto");
     res.producto = producto;
     next();
