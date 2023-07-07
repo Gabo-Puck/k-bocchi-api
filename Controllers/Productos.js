@@ -2,9 +2,61 @@ const Producto = require("../Models/Productos");
 const saltedMd5 = require("salted-md5");
 const path = require("path");
 const { generarNumeroAleatorio } = require("../utils/aleatorios");
+const { raw, ref } = require("objection");
+const { obtenerFechaComponent } = require("../utils/fechas");
 exports.verProductos = async (req, res, next) => {
+  let { palabra, categoria, rango_inferior, rango_superior, nuevo } = req.query;
   try {
-    return res.status(200).json(await Producto.query());
+    let fechaActual = obtenerFechaComponent();
+    console.log({nuevo});
+    let productos = await Producto.query()
+      .select([
+        "productos.*",
+        raw(
+          `FN_PRODUCTO_NUEVO(productos.fecha_publicacion,"${fechaActual}")`
+        ).as("isNuevo"),
+        raw(
+          `FN_HAS_STOCK(productos.stock)`
+        ).as("hasStock"),
+      ])
+      // .withGraphJoined("terapeuta.usuario")
+      .modify((builder) => {
+        if (palabra) {
+          builder.where((b) => {
+            b.where("productos.nombre", "like", `%${palabra}%`).orWhere(
+              "productos.caracteristicas",
+              "like",
+              `%${palabra}%`
+            );
+          });
+        }
+        if (categoria) {
+          builder.where((b) => {
+            b.where("productos.categoria", "=", categoria);
+          });
+        }
+        if (!rango_inferior) rango_inferior = 0;
+        if (!rango_superior) rango_superior = Number.MAX_SAFE_INTEGER;
+        builder.where((b) => {
+          b.where("productos.precio", ">=", rango_inferior).andWhere(
+            "productos.precio",
+            "<=",
+            rango_superior
+          );
+        });
+      })
+      .modify((builder) => {
+        if (nuevo==1) {
+          builder.where((b) => {
+            b.whereRaw(
+              `FN_PRODUCTO_NUEVO(productos.fecha_publicacion,"${fechaActual}") = 1`
+            );
+          });
+        }
+      })
+      .orderBy("productos.fecha_publicacion","DESC")
+      .debug();
+    return res.status(200).json(productos);
   } catch (error) {
     console.log(error);
     return res.status(500).json("Hay un error");
@@ -139,11 +191,9 @@ const ver = async (id) => {
 };
 const verProductosTerapeuta = async (id_terapeuta) => {
   try {
-    let producto = await Producto.query().where(
-      "id_terapeuta",
-      "=",
-      id_terapeuta
-    ).orderBy("fecha_publicacion","DESC");
+    let producto = await Producto.query()
+      .where("id_terapeuta", "=", id_terapeuta)
+      .orderBy("fecha_publicacion", "DESC");
     return producto;
   } catch (error) {
     console.log(error);

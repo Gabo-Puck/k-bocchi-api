@@ -23,7 +23,7 @@ class Producto extends Model {
         modelClass: Terapeuta,
         join: {
           from: "productos.id_terapeuta",
-          to: "terapeuta.id",
+          to: "terapeutas.id",
         },
       },
       ticket_producto: {

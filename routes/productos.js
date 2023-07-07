@@ -42,7 +42,7 @@ var router = express.Router();
  *          description: Es la id del terapeuta que vende el producto
  *        fecha_publicacion:
  *          type: string
- *          description: Es la fecha en la que se creo 
+ *          description: Es la fecha en la que se creo
  *        cantidad_vendida:
  *          type: integer
  *          description: La cantidad de producto vendida
@@ -204,6 +204,55 @@ router.patch("/", editarProducto);
  *           application/json:
  *             schema:
  *               type: string
+ *    parameters:
+ *        - in: query
+ *          description: palabra clave que se usara para buscar productos relacionados
+ *          name: palabra
+ *          schema:
+ *            type: string
+ *        - in: query
+ *          name: categoria
+ *          description: Filtro obtener los productos por categoría
+ *          schema:
+ *            type: string
+ *        - in: query
+ *          name: rango_inferior
+ *          description: Filtro para obtener productos con precio mayor al indicado
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: rango_superior
+ *          description: Filtro para obtener productos con precio menor al indicado
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: nuevo
+ *          description: Filtro para obtener productos publicados recientemente (1 semana)
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: lat
+ *          description: Filtro para la ubicacion, indica la latitud (son necesarios ambos para la distancia, lat y lng)
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: lng
+ *          description: Filtro para la ubicacion, indica la longitud (son necesarios ambos para la distancia, lat y lng)
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: distancia
+ *          description: Filtro para la ubicacion, indica la distancia máxima (son necesarios ambos para la distancia, lat y lng)
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: con_consultorio
+ *          description: filtro para terapeutas con consultorio
+ *          schema:
+ *            type: boolean
+ *
+ *
+ *
  */
 router.get("/", verProductos);
 module.exports = router;
