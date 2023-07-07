@@ -8,16 +8,14 @@ exports.verProductos = async (req, res, next) => {
   let { palabra, categoria, rango_inferior, rango_superior, nuevo } = req.query;
   try {
     let fechaActual = obtenerFechaComponent();
-    console.log({nuevo});
+    console.log({ nuevo });
     let productos = await Producto.query()
       .select([
         "productos.*",
         raw(
           `FN_PRODUCTO_NUEVO(productos.fecha_publicacion,"${fechaActual}")`
         ).as("isNuevo"),
-        raw(
-          `FN_HAS_STOCK(productos.stock)`
-        ).as("hasStock"),
+        raw(`FN_HAS_STOCK(productos.stock)`).as("hasStock"),
       ])
       // .withGraphJoined("terapeuta.usuario")
       .modify((builder) => {
@@ -46,7 +44,7 @@ exports.verProductos = async (req, res, next) => {
         });
       })
       .modify((builder) => {
-        if (nuevo==1) {
+        if (nuevo == 1) {
           builder.where((b) => {
             b.whereRaw(
               `FN_PRODUCTO_NUEVO(productos.fecha_publicacion,"${fechaActual}") = 1`
@@ -54,7 +52,7 @@ exports.verProductos = async (req, res, next) => {
           });
         }
       })
-      .orderBy("productos.fecha_publicacion","DESC")
+      .orderBy("productos.fecha_publicacion", "DESC")
       .debug();
     return res.status(200).json(productos);
   } catch (error) {
@@ -160,6 +158,18 @@ exports.eliminarProducto = async (req, res, next) => {
   } catch (error) {
     console.log(error);
     return res.status(500).json("Hay un error");
+  }
+};
+exports.verProducto = async (req, res, next) => {
+  try {
+    let {id} = req.params
+    let producto = await Producto.query().findById(id);
+    if (!producto) return res.status(404).json("No se encontro el producto");
+    res.producto = producto;
+    next();
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json("Algo ha salido mal");
   }
 };
 const crear = async (productoInsert) => {

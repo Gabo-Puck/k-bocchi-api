@@ -6,6 +6,7 @@ const {
   verProductos,
   actualizar,
   editarProducto,
+  verProducto,
 } = require("../Controllers/Productos");
 var router = express.Router();
 
@@ -121,7 +122,35 @@ router.post("/", crearProducto);
  *        in: path
  *        required: true
  */
-router.delete("/:id", eliminarProducto);
+router.delete("/:id", verProducto, eliminarProducto);
+/**
+ * @swagger
+ * /productos/{id}:
+ *  get:
+ *    summary: Permite obtener un producto
+ *    tags: [productos]
+ *    responses:
+ *      "200":
+ *        description: Devuelve el producto encontrado
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              $ref: "#/components/schemas/Producto"
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *    parameters:
+ *      - name: id
+ *        in: path
+ *        required: true
+ */
+router.get("/:id", verProducto, (req, res, next) => {
+  return res.status(200).json(res.producto);
+});
 /**
  * @swagger
  * /productos/terapeuta/{id_terapeuta}:
