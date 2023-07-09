@@ -10,6 +10,7 @@ class Producto extends Model {
   }
   $beforeInsert() {
     this.fecha_publicacion = obtenerFechaActualMexico().toISOString();
+    this.stock_carrito = this.stock;
     this.cantidad_vendida = 0;
   }
   $beforeUpdate() {

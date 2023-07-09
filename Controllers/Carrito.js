@@ -9,22 +9,25 @@ exports.addProducto = async (req, res, next) => {
   let { cantidad, id_producto, id_paciente } = req.body;
   try {
     //Si el producto encontrado ya no tiene stock devolvemos mensajes apropiados
-    if (producto.hasStock === 0) {
-      res.status(420).json("No tiene stock");
+    if (producto.stock === 0 || producto.stock_carrito === 0) {
+      res.status(420).json(producto);
       return;
     }
     //Si el producto encontrado no tiene stock suficiente para satisfacer la cantidad requerida por el cliente devolvemos mensaje apropiado
-    if (producto.stock < cantidad) {
-      res.status(421).json("No hay stock suficiente");
+    if (producto.stock_carrito < cantidad) {
+      res.status(421).json(producto);
       return;
     }
     //Obtenemos la cantidad de stock actualizada, restando la cantidad requerida por el cliente
-    let newStock = producto.stock - cantidad;
+    let newStock = producto.stock_carrito - cantidad;
     //Actualizamos el stock del producto
     let actualizado;
     try {
       console.log("FASE DE ACTUALIZACION DE STOCK");
-      actualizado = await actualizar({ id: id_producto, stock: newStock });
+      actualizado = await actualizar({
+        id: id_producto,
+        stock_carrito: newStock,
+      });
     } catch (err) {
       throw err;
     }
@@ -54,7 +57,10 @@ exports.addProducto = async (req, res, next) => {
     } catch (err) {
       throw err;
     }
-    return res.status(200).json(carrito);
+    return res.status(200).json({
+      ...carrito,
+      stock_carrito: actualizado.stock_carrito,
+    });
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo ha salido mal");
@@ -81,12 +87,15 @@ exports.deleteProducto = async (req, res, next) => {
     //hacemos que cantidad sea igual a la cantidad de producto en el carrito
     if (carritoItem.cantidad < cantidad) cantidad = carritoItem.cantidad;
     //Obtenemos el stock actualizado
-    let newStock = producto.stock + cantidad;
+    let newStock = producto.stock_carrito + cantidad;
     //Actualizamos el stock del producto
     let actualizado;
     try {
       console.log("FASE DE ACTUALIZACION DE STOCK");
-      actualizado = await actualizar({ id: id_producto, stock: newStock });
+      actualizado = await actualizar({
+        id: id_producto,
+        stock_carrito: newStock,
+      });
     } catch (err) {
       throw err;
     }
@@ -109,7 +118,11 @@ exports.deleteProducto = async (req, res, next) => {
     } catch (err) {
       throw err;
     }
-    return res.status(200).json(carrito);
+    //Una vez actualizado el carrito, retornamos los datos nuevos del carrito, así como el stock nuevo del producto
+    return res.status(200).json({
+      ...carrito,
+      stock_carrito: actualizado.stock_carrito,
+    });
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo ha salido mal");
