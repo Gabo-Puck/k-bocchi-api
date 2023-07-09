@@ -100,7 +100,7 @@ var router = express.Router();
 router.post("/", crearProducto);
 /**
  * @swagger
- * /productos/{id}:
+ * /productos/{id_producto}:
  *  delete:
  *    summary: Permite eliminar un producto
  *    tags: [productos]
@@ -118,14 +118,14 @@ router.post("/", crearProducto);
  *             schema:
  *               type: string
  *    parameters:
- *      - name: id
+ *      - name: id_producto
  *        in: path
  *        required: true
  */
-router.delete("/:id", verProducto, eliminarProducto);
+router.delete("/:id_producto", verProducto, eliminarProducto);
 /**
  * @swagger
- * /productos/{id}:
+ * /productos/{id_producto}:
  *  get:
  *    summary: Permite obtener un producto
  *    tags: [productos]
@@ -144,11 +144,11 @@ router.delete("/:id", verProducto, eliminarProducto);
  *             schema:
  *               type: string
  *    parameters:
- *      - name: id
+ *      - name: id_producto
  *        in: path
  *        required: true
  */
-router.get("/:id", verProducto, (req, res, next) => {
+router.get("/:id_producto", verProducto, (req, res, next) => {
   return res.status(200).json(res.producto);
 });
 /**

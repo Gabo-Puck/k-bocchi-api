@@ -18,6 +18,7 @@ var comentariosRouter = require("./routes/comentario");
 var resenasRouter = require("./routes/resenas");
 var registrationTokens = require("./routes/registrationTokens");
 var productosRouter = require("./routes/productos");
+var carritoRouter = require("./routes/carrito");
 var fileUpload = require("express-fileupload");
 var { knex } = require("./setup/knexfile");
 
@@ -71,6 +72,7 @@ app.use("/comentarios", comentariosRouter);
 app.use("/resenas", resenasRouter);
 app.use("/productos", productosRouter);
 app.use("/fcmtokens", registrationTokens);
+app.use("/carrito", carritoRouter);
 app.use("/", indexRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

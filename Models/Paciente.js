@@ -6,6 +6,8 @@ class Paciente extends Model {
   }
 
   static relationMappings() {
+    const Producto = require("./Productos");
+    const Carrito = require("./Carrito");
     const Cita = require("./Cita");
     const Usuario = require("./Usuario");
     const Resena = require("./Resenas");
@@ -59,6 +61,19 @@ class Paciente extends Model {
             to: "resenas.id_terapeuta",
           },
           to: "terapeutas.id",
+        },
+      },
+      carrito: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Producto,
+        join: {
+          from: "pacientes.id",
+          through: {
+            modelClass: Carrito,
+            from: "carrito.id_paciente",
+            to: "carrito.id_producto",
+          },
+          to: "productos.id",
         },
       },
     };

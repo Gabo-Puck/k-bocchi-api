@@ -1,6 +1,8 @@
 const { Model } = require("objection");
 const DetalleTicket = require("./DetalleTicket");
 const { obtenerFechaActualMexico } = require("../utils/fechas");
+const Paciente = require("./Paciente");
+const Carrito = require("./Carrito");
 
 class Producto extends Model {
   static get tableName() {
@@ -10,7 +12,7 @@ class Producto extends Model {
     this.fecha_publicacion = obtenerFechaActualMexico().toISOString();
     this.cantidad_vendida = 0;
   }
-  $beforeUpdate(){
+  $beforeUpdate() {
     delete this.cantidad_vendida;
     delete this.fecha_publicacion;
   }
@@ -37,6 +39,19 @@ class Producto extends Model {
             to: "detalle_ticket.id_ticket",
           },
           to: "tickets.id",
+        },
+      },
+      carritos: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Paciente,
+        join: {
+          from: "productos.id",
+          through: {
+            modelClass: Carrito,
+            from: "carrito.id_producto",
+            to: "carrito.id_paciente",
+          },
+          to: "pacientes.id",
         },
       },
     };

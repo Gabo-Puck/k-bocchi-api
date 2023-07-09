@@ -156,9 +156,9 @@ exports.editarProducto = async (req, res, next) => {
 };
 exports.eliminarProducto = async (req, res, next) => {
   try {
-    let { id } = req.params;
-    let { imagen } = await ver(id);
-    let productos = await eliminar(id);
+    let { id_producto } = req.params;
+    let { imagen } = await ver(id_producto);
+    let productos = await eliminar(id_producto);
     await req.app.locals.bucket.file(imagen).delete();
     return res.status(200).json(productos);
   } catch (error) {
@@ -166,15 +166,17 @@ exports.eliminarProducto = async (req, res, next) => {
     return res.status(500).json("Hay un error");
   }
 };
+//Esta funcion middleware agrega una propiedad producto a res
 exports.verProducto = async (req, res, next) => {
   try {
-    let { id } = req.params;
+    let { id_producto } = req.params;
+    if (!id_producto) id_producto = req.body.id_producto;
     let fechaActual = obtenerFechaComponent();
 
     let producto = await Producto.query()
       .withGraphJoined("terapeuta.usuario")
 
-      .findById(id)
+      .findById(id_producto)
       .select([
         "productos.*",
         raw(
