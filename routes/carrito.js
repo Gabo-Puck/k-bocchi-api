@@ -1,6 +1,6 @@
 const express = require("express");
 const { verProducto } = require("../Controllers/Productos");
-const { deleteProducto, addProducto, verCarrito } = require("../Controllers/Carrito");
+const { deleteProducto, addProducto, verCarrito, setCarritoItem } = require("../Controllers/Carrito");
 var router = express.Router();
 
 /**
@@ -67,6 +67,48 @@ var router = express.Router();
  *              type: string
  */
 router.post("/", verProducto, addProducto);
+/**
+ * @swagger
+ * /carrito/set:
+ *  post:
+ *    summary: Ruta que permite añadir productos al carrito de un usuario. Si ya existe el producto cambia la cantidad a la requerida en la request. Si no esta se agrega
+ *    tags: [Carrito]
+ *    consumes:
+ *      - application/json
+ *    requestBody:
+ *      content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *            $ref: "#/components/schemas/Carrito"
+ *    responses:
+ *      200:
+ *        description: Devuelve el item recién creado
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              $ref: "#/components/schemas/Carrito"
+ *      420:
+ *        description: Devuelve un mensaje indicando que el producto ya no tiene stock
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      421:
+ *        description: Devuelve un mensaje indicando que el producto no tiene stock suficiente
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      500:
+ *        description: Devuelve un mensaje de error del servidor
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ */
+router.post("/set", verProducto, setCarritoItem);
 /**
  * @swagger
  * /carrito/{id_paciente}:
