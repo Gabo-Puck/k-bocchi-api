@@ -8,7 +8,12 @@ const {
   editarProducto,
   verProducto,
 } = require("../Controllers/Productos");
-const { crearOrden, getToken } = require("../Controllers/Paypal");
+const {
+  crearOrden,
+  getToken,
+  crearVinculacionLink,
+  agregarMerchantId,
+} = require("../Controllers/Paypal");
 var router = express.Router();
 
 /**
@@ -42,45 +47,20 @@ var router = express.Router();
  *        required: true
  */
 router.post("/create-order/:id_paciente", getToken, crearOrden);
+
 /**
  * @swagger
- * /productos/{id_producto}:
- *  delete:
- *    summary: Permite eliminar un producto
- *    tags: [productos]
- *    responses:
- *      "200":
- *        description: Devuelve la cantidad de productos eliminados
- *        content:
- *          application/json:
- *            schema:
- *              type: number
- *      "500":
- *         description: Devuelve un mensaje indicando que algo salió mal
- *         content:
- *           application/json:
- *             schema:
- *               type: string
- *    parameters:
- *      - name: id_producto
- *        in: path
- *        required: true
- */
-router.delete("/:id_producto", verProducto, eliminarProducto);
-/**
- * @swagger
- * /productos/{id_producto}:
+ * /pagos/create-onboard-seller/{id_terapeuta}:
  *  get:
- *    summary: Permite obtener un producto
- *    tags: [productos]
+ *    summary: Permite crear un link para vincular un correo a una cuenta
+ *    tags: [pagos]
  *    responses:
  *      "200":
- *        description: Devuelve el producto encontrado
+ *        description: Devuelve un link para vinculación
  *        content:
  *          application/json:
  *            schema:
- *              type: object
- *              $ref: "#/components/schemas/Producto"
+ *              type: string
  *      "500":
  *         description: Devuelve un mensaje indicando que algo salió mal
  *         content:
@@ -88,121 +68,38 @@ router.delete("/:id_producto", verProducto, eliminarProducto);
  *             schema:
  *               type: string
  *    parameters:
- *      - name: id_producto
- *        in: path
- *        required: true
- */
-router.get("/:id_producto", verProducto, (req, res, next) => {
-  return res.status(200).json(res.producto);
-});
-/**
- * @swagger
- * /productos/terapeuta/{id_terapeuta}:
- *  get:
- *    summary: Permite ver los productos de un terapeuta
- *    tags: [productos]
- *    responses:
- *      "200":
- *        description: Devuelve un array de productos
- *        content:
- *          application/json:
- *            schema:
- *              type: array
- *              items:
- *                  $ref: "#/components/schemas/Producto"
- *      "500":
- *         description: Devuelve un mensaje indicando que algo salió mal
- *         content:
- *           application/json:
- *             schema:
- *               type: string
- *    parameters:
- *      - name: id_terapeuta
- *        in: path
- *        required: true
- */
-router.get("/terapeuta/:id_terapeuta", verProductosTerapeuta);
-/**
- * @swagger
- * /productos:
- *  patch:
- *    summary: Permite modificar un producto
- *    tags: [productos]
- *    requestBody:
- *      content:
- *        multipart/form-data:
- *          schema:
- *            type: object
- *            properties:
- *              producto:
- *                  type: object
- *                  $ref: "#/components/schemas/Producto"
- *              imagen:
- *                type: string
- *                format: binary
- *    responses:
- *      "200":
- *        description: Devuelve el token con los datos modificados
- *        content:
- *          application/json:
- *            schema:
- *              type: object
- *              $ref: '#/components/schemas/Producto'
- *      "500":
- *         description: Devuelve un mensaje indicando que algo salió mal
- *         content:
- *           application/json:
- *             schema:
- *               type: string
- */
-router.patch("/", editarProducto);
-/**
- * @swagger
- * /productos:
- *  get:
- *    summary: Permite ver todos los productos del sistema
- *    tags: [productos]
- *    responses:
- *      "200":
- *        description: Devuelve un arreglo de productos
- *        content:
- *          application/json:
- *            schema:
- *              type: array
- *              items:
- *                  $ref: '#/components/schemas/Productos'
- *      "500":
- *         description: Devuelve un mensaje indicando que algo salió mal
- *         content:
- *           application/json:
- *             schema:
- *               type: string
- *    parameters:
- *        - in: query
- *          description: palabra clave que se usara para buscar productos relacionados
- *          name: palabra
- *          schema:
- *            type: string
- *        - in: query
- *          name: categoria
- *          description: Filtro obtener los productos por categoría
- *          schema:
- *            type: string
- *        - in: query
- *          name: rango_inferior
- *          description: Filtro para obtener productos con precio mayor al indicado
- *          schema:
- *            type: number
- *        - in: query
- *          name: rango_superior
- *          description: Filtro para obtener productos con precio menor al indicado
- *          schema:
- *            type: number
- *        - in: query
- *          name: nuevo
- *          description: Filtro para obtener productos publicados recientemente (1 semana)
+ *        - in: path
+ *          description: id del venddor
+ *          name: id_terapeuta
  *          schema:
  *            type: number
  */
-router.get("/", verProductos);
+router.get("/create-onboard-seller/:id_terapeuta", getToken, crearVinculacionLink);
+/**
+ * @swagger
+ * /pagos/onboard-completed/webhook:
+ *  post:
+ *    summary: Permite terminar la vinculación de paypal. Se llama mediante los webhooks de paypal
+ *    tags: [pagos]
+ *    responses:
+ *      "200":
+ *        description: Devuelve un link para vinculación
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *    parameters:
+ *        - in: path
+ *          description: id del venddor
+ *          name: id_terapeuta
+ *          schema:
+ *            type: number
+ */
+router.post("/onboard-completed/webhook", agregarMerchantId);
 module.exports = router;
