@@ -1,8 +1,15 @@
 const { default: axios } = require("axios");
-const { PAYPAL_URL, PAYPAL_CLIENT_ID, PAYPAL_SECRET } = require("../config");
+const {
+  PAYPAL_URL,
+  PAYPAL_CLIENT_ID,
+  PAYPAL_SECRET,
+  PAYPAL_PARTNER_MERCHANT_ID,
+} = require("../config");
 const { param } = require("../routes");
 const Carrito = require("../Models/Carrito");
 const Usuario = require("../Models/Usuario");
+const Terapeuta = require("../Models/Terapeuta");
+const { generarNotificacion } = require("../utils/notificaciones");
 
 //Permite crear una orden a partir del carrito de un pacinete
 exports.crearOrden = async (req, res, next) => {
@@ -26,7 +33,7 @@ exports.crearOrden = async (req, res, next) => {
       ...itemCarrito
     }) => {
       let index = purchase_units.findIndex(
-        ({ payee: { email_address } }) => email_address === usuario.email
+        ({ payee: { merchant_id } }) => merchant_id === itemTerapeuta.merchantId
       );
       let item = {
         name: itemProducto.nombre,
@@ -62,7 +69,7 @@ exports.crearOrden = async (req, res, next) => {
         };
       } else {
         let payee = {
-          email_address: usuario.email,
+          merchant_id: itemTerapeuta.merchantId,
         };
         purchase_units.push({
           reference_id: itemTerapeuta.id,
@@ -135,14 +142,24 @@ exports.cancelarOrden = async (req, res, next) => {
 };
 
 exports.crearVinculacionLink = async (req, res, next) => {
+  //Obtenemos el id del terapeuta de los parametros de la request
+
   let { id_terapeuta } = req.params;
   try {
+    //Obtenemos el usuario vinculado al id del terapeuta
+
     let usuario = await Usuario.query()
       .withGraphJoined("terapeuta")
       .findOne({ "terapeuta.id": id_terapeuta });
+    //Si no existe retornamos un 404
+
     if (!usuario) return res.status(404).json("No se encontro el vendedor");
+
+    //Creamos el objeto para generar el link de vinculación
     let onboardBody = {
       tracking_id: `${id_terapeuta}`,
+      //Este tracking_id lo usamos para posteriores funcionamientos
+
       operations: [
         {
           operation: "API_INTEGRATION",
@@ -163,6 +180,8 @@ exports.crearVinculacionLink = async (req, res, next) => {
       products: ["EXPRESS_CHECKOUT"],
       legal_consents: [{ type: "SHARE_DATA_CONSENT", granted: true }],
     };
+    //Hacemos la petición para crear el link de referido/vinculación
+
     let onboardResponse = await axios.post(
       `${PAYPAL_URL}/v2/customer/partner-referrals`,
       onboardBody,
@@ -173,55 +192,101 @@ exports.crearVinculacionLink = async (req, res, next) => {
         },
       }
     );
+    //Una vez se generan los links, lo devolvemos al usuario
     return res.status(200).json(onboardResponse.data);
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo ha salido mal generando el onboarding");
   }
 };
+
 exports.getVinculacionStatus = async (req, res, next) => {
+  //Obtenemos el id del terapeuta
   let { id_terapeuta } = req.params;
+  let { access_token } = res;
   try {
-    let usuario = await Usuario.query()
-      .withGraphJoined("terapeuta")
-      .findOne({ "terapeuta.id": id_terapeuta });
-    if (!usuario) return res.status(404).json("No se encontro el vendedor");
-    let onboardBody = {
-      tracking_id: `${id_terapeuta}`,
-      operations: [
-        {
-          operation: "API_INTEGRATION",
-          api_integration_preference: {
-            rest_api_integration: {
-              integration_method: "PAYPAL",
-              integration_type: "THIRD_PARTY",
-              third_party_details: {
-                features: ["PAYMENT", "REFUND"],
-              },
-            },
-          },
-        },
-      ],
-      products: ["EXPRESS_CHECKOUT"],
-      legal_consents: [{ type: "SHARE_DATA_CONSENT", granted: true }],
-    };
-    let onboardResponse = await axios.post(
-      `${PAYPAL_URL}/v2/customer/partner-referrals`,
-      onboardBody,
+    // PAYPAL_PARTNER_MERCHANT_ID
+    //Obtenemos el merchantIdInPayPal del usuario mediante el tracking id
+    let { data: merchant_integration } = await axios.get(
+      `${PAYPAL_URL}/v1/customer/partners/${PAYPAL_PARTNER_MERCHANT_ID}/merchant-integrations?tracking_id=${id_terapeuta}`,
       {
-        auth: {
-          username: PAYPAL_CLIENT_ID,
-          password: PAYPAL_SECRET,
+        headers: {
+          Authorization: `Bearer ${access_token}`,
         },
       }
     );
-    return res.status(200).json(onboardResponse.data);
+    //obtenemos el merchant_id de merchant_integration
+    let { merchant_id } = merchant_integration;
+    //Ahora obtenemos el status de la vinculación mediante la api de paypal
+    let { data: onboard_status } = await axios.get(
+      `${PAYPAL_URL}/v1/customer/partners/${PAYPAL_PARTNER_MERCHANT_ID}/merchant-integrations/${merchant_id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      }
+    );
+    //posteriormente revisamos si los permisos son adecuados
+    //primary_email_confirmed indica si el usuario ha validado su correo
+    //payments_receivable indica si la cuenta puede recibir pagos
+    //oauth_third_party indica si el usuario ha permitido a la aplicación actuar en su nombre (realizar pagos)
+    let { primary_email_confirmed, payments_receivable, oauth_integrations } =
+      onboard_status;
+    console.log({
+      onboard_status,
+    });
+    if (
+      !(primary_email_confirmed && payments_receivable && oauth_integrations)
+    ) {
+      return res.status(400).json({
+        primary_email_confirmed,
+        payments_receivable,
+        oauth_integrations,
+      });
+    }
+    return res.status(200).json({ merchant_id });
   } catch (err) {
     console.log(err);
-    return res.status(500).json("Algo ha salido mal generando el onboarding");
+    if (err.response && err.response.status === 404) {
+      //no esta vinculado porque el proceso no ha iniciado
+      return res
+        .status(404)
+        .json("No esta vinculado, no ha empezado el proceso");
+    }
+    return res.status(500).json("Algo ha salido mal obteniendo el status");
   }
 };
+
 exports.agregarMerchantId = async (req, res, next) => {
-  console.log({ body: req.body });
-  return res.status(200).json(req.body);
+  //Obtenemos tracking_id (que es el mismo id del terapeuta)
+  //Obtenemos el merchant_id (que es el identificador de paypal para el terapeuta dentro de nuestra plataforma)
+  let {
+    resource: { tracking_id, merchant_id },
+  } = req.body;
+  try {
+    //Primero obtenemos el usuario
+    let terapeuta = await Terapeuta.query().withGraphJoined("usuario").findOne({
+      "terapeutas.id": tracking_id,
+    });
+    //Si el usuario no existe retornamos un 200 directamente (esto porque sino paypal sigue intentando mandar la notificacion)
+    if (!terapeuta) return res.status(200).json("correct");
+    //Una vez obteneido el usuario agregamos su merchant_id a la bd
+    await terapeuta.$query().patchAndFetch({
+      "terapeutas.merchantId": merchant_id,
+    });
+    //Y generamos una notificacion apropiada para el usuario
+    await generarNotificacion({
+      id_usuario: terapeuta.usuario.id,
+      descripcion: "¡Se ha vinculado tu cuenta de paypal con tu cuenta!",
+      contexto_web: "/app/perfil",
+      contexto_movil: "intent",
+      titulo: "Vinculación de cuenta",
+    });
+    //Retornamos un 200 para indicar que todo bien
+    return res.status(200).json("recibido");
+  } catch (err) {
+    console.log(err);
+    //Si algo sale mal se retorna un 500. De esta forma paypal sigue tratando de mandar la notificacion
+    return res.status(500).json("Algo ha salido mal");
+  }
 };

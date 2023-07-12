@@ -13,6 +13,7 @@ const {
   getToken,
   crearVinculacionLink,
   agregarMerchantId,
+  getVinculacionStatus,
 } = require("../Controllers/Paypal");
 var router = express.Router();
 
@@ -50,6 +51,27 @@ router.post("/create-order/:id_paciente", getToken, crearOrden);
 
 /**
  * @swagger
+ * /pagos/on-signup-complete:
+ *  get:
+ *    summary: Permite crear un link para vincular un correo a una cuenta
+ *    tags: [pagos]
+ *    responses:
+ *      "200":
+ *        description: Devuelve un link para vinculación
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ */
+router.get("/on-signup-complete", agregarMerchantId);
+/**
+ * @swagger
  * /pagos/create-onboard-seller/{id_terapeuta}:
  *  get:
  *    summary: Permite crear un link para vincular un correo a una cuenta
@@ -75,6 +97,33 @@ router.post("/create-order/:id_paciente", getToken, crearOrden);
  *            type: number
  */
 router.get("/create-onboard-seller/:id_terapeuta", getToken, crearVinculacionLink);
+/**
+ * @swagger
+ * /pagos/onboard-status/{id_terapeuta}:
+ *  get:
+ *    summary: Permite crear un link para vincular un correo a una cuenta
+ *    tags: [pagos]
+ *    responses:
+ *      "200":
+ *        description: Devuelve un link para vinculación
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *    parameters:
+ *        - in: path
+ *          description: id del venddor
+ *          name: id_terapeuta
+ *          schema:
+ *            type: number
+ */
+router.get("/onboard-status/:id_terapeuta", getToken, getVinculacionStatus);
 /**
  * @swagger
  * /pagos/onboard-completed/webhook:
