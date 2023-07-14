@@ -1,11 +1,12 @@
 const { Model } = require("objection");
-const NotaCompartida = require("./NotaCompartida");
 class Terapeuta extends Model {
   static get tableName() {
     return "terapeutas";
   }
 
   static relationMappings() {
+    const NotaCompartida = require("./NotaCompartida");
+    const Producto = require("./Productos");
     const Nota = require("./Nota");
     const Horario = require("./Horario");
     const Cita = require("./Cita");
@@ -83,6 +84,14 @@ class Terapeuta extends Model {
             to: "resena.id_paciente",
           },
           to: "pacientes.id",
+        },
+      },
+      productos: {
+        relation: Model.HasManyRelation,
+        modelClass: Producto,
+        join: {
+          from: "terapeutas.id",
+          to: "productos.id_terapeuta",
         },
       },
     };

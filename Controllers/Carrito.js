@@ -135,10 +135,7 @@ exports.deleteProducto = async (req, res, next) => {
 exports.verCarrito = async (req, res, next) => {
   let { id_paciente } = req.params;
   try {
-    let carrito = await Carrito.query()
-      .joinRelated("paciente")
-      .withGraphJoined("producto")
-      .where("paciente.id", "=", id_paciente);
+    let carrito = await verCarritoPaciente(id_paciente)
     return res.status(200).json(carrito);
   } catch (error) {
     console.log(error);
@@ -267,3 +264,15 @@ const verCarritoItem = async (carrito) => {
     throw err;
   }
 };
+const verCarritoPaciente = async (id_paciente) => {
+  try {
+    let carrito = await Carrito.query()
+      .joinRelated("paciente")
+      .withGraphJoined("producto.terapeuta.usuario")
+      .where("paciente.id", "=", id_paciente);
+    return carrito;
+  } catch (error) {
+    throw error;
+  }
+};
+exports.getCarritoPaciente = verCarritoPaciente;

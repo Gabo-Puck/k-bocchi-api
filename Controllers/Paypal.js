@@ -10,11 +10,15 @@ const Carrito = require("../Models/Carrito");
 const Usuario = require("../Models/Usuario");
 const Terapeuta = require("../Models/Terapeuta");
 const { generarNotificacion } = require("../utils/notificaciones");
+const Producto = require("../Models/Productos");
+
 
 //Permite crear una orden a partir del carrito de un pacinete
 exports.crearOrden = async (req, res, next) => {
   let { access_token } = res;
   let { id_paciente } = req.params;
+  let { addressId, costoEnvio } = req.body;
+  console.log({ addressId, costoEnvio });
 
   let carrito = await Carrito.query()
     .withGraphFetched("producto.terapeuta.usuario")
@@ -23,7 +27,7 @@ exports.crearOrden = async (req, res, next) => {
   if (carrito.length === 0)
     return res.status(404).json("No hay items en el carrito");
   let purchase_units = [];
-
+  let paquetes = 0;
   carrito.forEach(
     ({
       producto: {
@@ -35,6 +39,7 @@ exports.crearOrden = async (req, res, next) => {
       let index = purchase_units.findIndex(
         ({ payee: { merchant_id } }) => merchant_id === itemTerapeuta.merchantId
       );
+      console.log("ID", itemTerapeuta.merchantId);
       let item = {
         name: itemProducto.nombre,
         quantity: itemCarrito.cantidad,
@@ -51,23 +56,34 @@ exports.crearOrden = async (req, res, next) => {
             currency_code: "MXN",
             value: itemProducto.precio * itemCarrito.cantidad,
           },
+          // shipping: {
+          //   currency_code: "MXN",
+          //   value: 100,
+          // },
         },
       };
       if (index != -1) {
         purchase_units[index].items.push(item);
         let amountFound = purchase_units[index].amount;
+        let { item_total, shipping } = amountFound.breakdown;
         purchase_units[index].amount = {
           ...amountFound,
           value: amountFound.value + itemProducto.precio * itemCarrito.cantidad,
+          // + 100,
           breakdown: {
             item_total: {
               currency_code: "MXN",
               value:
-                amountFound.value + itemProducto.precio * itemCarrito.cantidad,
+                item_total.value + itemProducto.precio * itemCarrito.cantidad,
             },
+            // shipping: {
+            //   currency_code: "MXN",
+            //   value: shipping.value + 100,
+            // },
           },
         };
       } else {
+        paquetes++;
         let payee = {
           merchant_id: itemTerapeuta.merchantId,
         };
@@ -80,7 +96,25 @@ exports.crearOrden = async (req, res, next) => {
       }
     }
   );
-  console.log(purchase_units);
+  let splitted = costoEnvio / paquetes;
+  purchase_units = purchase_units.map((value) => {
+    console.log(value);
+    return {
+      ...value,
+      amount: {
+        currency_code: "MXN",
+        value: value.amount.value + splitted,
+        breakdown: {
+          ...value.amount.breakdown,
+          shipping: {
+            currency_code: "MXN",
+            value: splitted,
+          },
+        },
+      },
+    };
+  });
+  console.log({ purchase_units });
   const order = {
     intent: "CAPTURE",
     purchase_units,
@@ -91,7 +125,16 @@ exports.crearOrden = async (req, res, next) => {
       return_url: `http://localhost:4000/capture-order`,
       cancel_url: `http://localhost:4000/cancel-payment`,
     },
+    // payment_instruction: {
+    //   platform_fees: [
+    //     {
+    //       amount: { value: `${100}`, currency_code: "MX" },
+    //       payee: { merchant_id: process.env.PAYPAL_PARTNER_MERCHANT_ID },
+    //     },
+    //   ],
+    // },
   };
+  // console.log({ d: order.payment_instruction.platform_fees });
   try {
     const response = await axios.post(
       `${PAYPAL_URL}/v2/checkout/orders`,
@@ -108,6 +151,18 @@ exports.crearOrden = async (req, res, next) => {
     console.error(err);
     return res.json("Algo ha salido mal generando la orden");
   }
+};
+exports.obtenerVendedores = async (req, res, next) => {
+  let { id_paciente } = req.params;
+
+  let carrito = await Terapeuta.query()
+    .joinRelated("productos.carritos") //si llegaramos a necesitar más datos quitar esto y poner withGraphJoined
+    .distinct("merchantId as merchant_id") //con withGraphJoined ya no es necesario el distinc
+    .where("productos:carritos.id", "=", id_paciente);
+
+  if (carrito.length === 0)
+    return res.status(404).json("No hay items en el carrito");
+  return res.status(200).json(carrito);
 };
 //Esta funcion de middleware permite obtener el token de autenticación de paypal
 //y lo anexa en res.access_token
@@ -128,8 +183,7 @@ exports.getToken = async (req, res, next) => {
     // return res.json("tokenizado");
     next();
   } catch (err) {
-    console.log(object);
-    err;
+    console.log(err);
     return res.status(500).json("Algo ha salido mal obteniendo el token");
   }
 };
@@ -168,7 +222,7 @@ exports.crearVinculacionLink = async (req, res, next) => {
               integration_method: "PAYPAL",
               integration_type: "THIRD_PARTY",
               third_party_details: {
-                features: ["PAYMENT", "REFUND"],
+                features: ["PAYMENT", "REFUND", "PARTNER_FEE"],
               },
             },
           },

@@ -20,6 +20,7 @@ var registrationTokens = require("./routes/registrationTokens");
 var productosRouter = require("./routes/productos");
 var carritoRouter = require("./routes/carrito");
 var pagosRouter = require("./routes/pagos");
+var enviosRouter = require("./routes/envios");
 var fileUpload = require("express-fileupload");
 var { knex } = require("./setup/knexfile");
 
@@ -75,6 +76,7 @@ app.use("/productos", productosRouter);
 app.use("/fcmtokens", registrationTokens);
 app.use("/carrito", carritoRouter);
 app.use("/pagos", pagosRouter);
+app.use("/envios", enviosRouter);
 app.use("/", indexRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
