@@ -97,6 +97,8 @@ router.get("/", verNotas);
  *                      $ref: "#/components/schemas/Nota"
  *                    id_terapeuta:
  *                      type: integer
+ *                    id_address:
+ *                      type: string
  *    tags: [Notas]
  *    responses:
  *      "201":

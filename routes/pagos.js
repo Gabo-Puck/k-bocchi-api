@@ -49,6 +49,7 @@ var router = express.Router();
  *        required: true
  */
 router.post("/create-order/:id_paciente", getToken, crearOrden);
+
 /**
  * @swagger
  * /pagos/see-merchants/{id_paciente}:

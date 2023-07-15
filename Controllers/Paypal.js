@@ -12,7 +12,6 @@ const Terapeuta = require("../Models/Terapeuta");
 const { generarNotificacion } = require("../utils/notificaciones");
 const Producto = require("../Models/Productos");
 
-
 //Permite crear una orden a partir del carrito de un pacinete
 exports.crearOrden = async (req, res, next) => {
   let { access_token } = res;
@@ -154,12 +153,7 @@ exports.crearOrden = async (req, res, next) => {
 };
 exports.obtenerVendedores = async (req, res, next) => {
   let { id_paciente } = req.params;
-
-  let carrito = await Terapeuta.query()
-    .joinRelated("productos.carritos") //si llegaramos a necesitar más datos quitar esto y poner withGraphJoined
-    .distinct("merchantId as merchant_id") //con withGraphJoined ya no es necesario el distinc
-    .where("productos:carritos.id", "=", id_paciente);
-
+  let carrito = await obtenerMerchants(id_paciente);
   if (carrito.length === 0)
     return res.status(404).json("No hay items en el carrito");
   return res.status(200).json(carrito);
@@ -344,3 +338,13 @@ exports.agregarMerchantId = async (req, res, next) => {
     return res.status(500).json("Algo ha salido mal");
   }
 };
+
+const obtenerMerchants = async (id_paciente) => {
+  return await Terapeuta.query()
+    .joinRelated("productos.carritos") //si llegaramos a necesitar más datos quitar esto y poner withGraphJoined
+    .distinct("merchantId as merchant_id") //con withGraphJoined ya no es necesario el distinc
+    .distinct("terapeutas.id_usuario") //con withGraphJoined ya no es necesario el distinc
+    .where("productos:carritos.id", "=", id_paciente);
+};
+
+exports.obtenerMerchants = obtenerMerchants;

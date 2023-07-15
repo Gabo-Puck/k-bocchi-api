@@ -16,12 +16,12 @@ const {
   getVinculacionStatus,
   obtenerVendedores,
 } = require("../Controllers/Paypal");
-const { webhook, crearEnvio, verificarDomicilio: verifyAddress } = require("../Controllers/Envios");
+const { webhook, crearEnvio, verificarDomicilio: verifyAddress, realizarEnvio } = require("../Controllers/Envios");
 var router = express.Router();
 
 /**
  * @swagger
- * /envios/webhook:
+ * /envios/webhook/{id_paquete}:
  *  post:
  *    summary: Ruta que permite probar los webhooks de easypost
  *    tags: [Envios]
@@ -44,9 +44,14 @@ var router = express.Router();
  *          application/json:
  *            schema:
  *              type: string
-
+ *  parameters:
+ *      - in: path
+ *        name: id_paquete
+ *        required: true
+ *        schema:
+ *          type: string
  */
-router.post("/webhook", webhook);
+router.post("/webhook/:id_paquete", webhook);
 /**
  * @swagger
  * /envios/create-shipment:
@@ -131,4 +136,66 @@ router.post("/calculate-cost", crearEnvio);
 
  */
 router.post("/verify-address", verifyAddress);
+
+/**
+ * @swagger
+ * /envios/verify-address:
+ *  post:
+ *    summary: Ruta que validar un domicilio
+ *    tags: [Envios]
+ *    responses:
+ *      200:
+ *        description: Devuelve un arreglo con las validaciones
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *      404:
+ *        description: Devuelve un mensaje de error indicando que no existen productos en el carrito
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *      500:
+ *        description: Devuelve un mensaje de error del servidor
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+
+ */
+router.post("/crear-envio", verifyAddress);
+/**
+ * @swagger
+ * /envios/buy-shipment/{id_paquete}:
+ *  post:
+ *    summary: Ruta para reaizar el envio
+ *    tags: [Envios]
+ *    responses:
+ *      200:
+ *        description: Devuelve el shipment comprado
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *      404:
+ *        description: Devuelve un mensaje de error indicando que no existen productos en el carrito
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *      500:
+ *        description: Devuelve un mensaje de error del servidor
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *  parameters:
+ *      - in: path
+ *        name: id_paquete
+ *        required: true
+ *        schema:
+ *          type: string
+ */
+router.post("/buy-shipment/:id_paquete", realizarEnvio);
 module.exports = router;

@@ -1,5 +1,4 @@
 const { Model } = require("objection");
-const Producto = require("./Productos");
 const DetalleTicket = require("./DetalleTicket");
 
 class Ticket extends Model {
@@ -18,17 +17,12 @@ class Ticket extends Model {
           to: "pacientes.id",
         },
       },
-      productos_ticket: {
-        relation: Model.ManyToManyRelation,
-        modelClass: Producto,
+      detalles: {
+        relation: Model.HasManyRelation,
+        modelClass: DetalleTicket,
         join: {
           from: "tickets.id",
-          through: {
-            modelClass: DetalleTicket,
-            from: "detalle_ticket.id_ticket",
-            to: "detalle_ticket.id_producto",
-          },
-          to: "productos.id",
+          to: "detalle_ticket.id_ticket",
         },
       },
     };

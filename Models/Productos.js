@@ -14,7 +14,7 @@ class Producto extends Model {
     this.cantidad_vendida = 0;
   }
   $beforeUpdate() {
-    delete this.cantidad_vendida;
+    // delete this.cantidad_vendida;
     delete this.fecha_publicacion;
   }
   static relationMappings() {

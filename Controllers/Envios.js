@@ -8,11 +8,86 @@ const {
 } = require("../utils/algoritmoCalcularCaja");
 const { obtenerComponentesDireccion } = require("../utils/direcciones");
 const { generarNumeroAleatorio } = require("../utils/aleatorios");
-
-exports.webhook = (req, res, next) => {
-  console.log({ body: res.body });
-  res.status(200).json("Ok");
+const {
+  PAQUETERIA,
+  CAMINO,
+  PUNTO,
+  ESTADO_PAQUETERIA,
+  ESTADO_PREPARADO,
+  ESTADO_CAMINO,
+  ESTADO_PUNTO,
+  ESTADO_ENTREGADO,
+} = require("../utils/estadoPaquete");
+const Paquete = require("../Models/Paquete");
+const { obtenerFechaActualMexico } = require("../utils/fechas");
+const EN_PAQUETERIA = "unknown";
+const PREPARADO_ENVIO = "pre_transit";
+const EN_CAMINO = "in_transit";
+const EN_PUNTO = "out_for_delivery";
+const ENTREGADO = "delivered";
+const WEBHOOK_CREADO = "tracker.created";
+const WEBHOOK_ACTUALIZADO = "tracker.updated";
+exports.webhook = async (req, res, next) => {
+  let { id_paquete } = req.params;
+  try {
+    let {
+      contenido: [
+        {
+          terapeuta: { id_usuario: id_ut },
+          ticket: {
+            paciente: { id_usuario: id_up },
+          },
+        },
+      ],
+    } = await Paquete.query()
+      .withGraphJoined("contenido.[terapeuta,ticket.[paciente]]")
+      .findOne({ "paquetes.id": id_paquete });
+    return res.json({ id_ut, id_up });
+  } catch (err) {
+    console.log(err);
+    res.json("x");
+  }
+  // let {
+  //   description, //description indica la acción que activo nuestro webook
+  //   result: { status, shipment_id }, //status indica en que fase del envío se encuentra el paquete
+  // } = req.body;
+  // res.status(200).json("Ok");
+  // let estado;
+  // console.log(`ESTADO PARA: ${shipment_id}`);
+  // if (description === WEBHOOK_CREADO) {
+  //   estado = ESTADO_PAQUETERIA;
+  // }
+  // if (description === WEBHOOK_ACTUALIZADO) {
+  //   estado = obtenerEstado(status);
+  // }
+  // try {
+  //   let patch = {
+  //     estatus: estado,
+  //   };
+  //   if (estado === ESTADO_ENTREGADO)
+  //     patch = {
+  //       ...patch,
+  //       fecha_entrega: obtenerFechaActualMexico().toISOString(),
+  //     };
+  //   await Paquete.query().findById(shipment_id).patch(patch);
+  // } catch (err) {
+  //   console.log(err);
+  // }
+  // console.log(estado);
 };
+
+function obtenerEstado(status) {
+  switch (status) {
+    case PREPARADO_ENVIO:
+      return ESTADO_PREPARADO;
+    case EN_CAMINO:
+      return ESTADO_CAMINO;
+    case EN_PUNTO:
+      return ESTADO_PUNTO;
+    case ENTREGADO:
+      return ESTADO_ENTREGADO;
+  }
+}
 exports.crearEnvio = async (req, res, next) => {
   const client = new EasyPost(process.env.EASYPOST_API_KEY);
   const shipment = await client.Shipment.create({
@@ -66,6 +141,17 @@ exports.calcularEnvio = async (req, res, next) => {
     return res.status(500).json("Algo ha salido mal obteniendo los costos");
   }
 };
+
+exports.obtenerDomicilio = async (id_address) => {
+  try {
+    const client = new EasyPost(process.env.EASYPOST_API_KEY);
+    const fromAddress = await client.Address.retrieve(id_address);
+    return fromAddress;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+};
 exports.verificarDomicilio = async (req, res, next) => {
   try {
     const client = new EasyPost(process.env.EASYPOST_API_KEY);
@@ -82,7 +168,7 @@ exports.verificarDomicilio = async (req, res, next) => {
       return res.status(401).json(verifications);
 
     let precio = await calcularPrecioEnvio(fromAddress, id_paciente);
-    console.log({precio});
+    console.log({ precio });
     return res.status(200).json({ fromAddress, precio });
   } catch (err) {
     console.log(err);
@@ -90,7 +176,7 @@ exports.verificarDomicilio = async (req, res, next) => {
   }
 };
 
-async function calcularPrecioEnvio(address, id_paciente) {
+const calcularPrecioEnvio = async (address, id_paciente) => {
   let carrito = await getCarritoPaciente(id_paciente);
 
   let cajas = obtenerTamanoCajas(carrito);
@@ -102,15 +188,34 @@ async function calcularPrecioEnvio(address, id_paciente) {
     let { nombre, telefono } = caja.terapeuta.usuario;
     const client = new EasyPost(process.env.EASYPOST_API_KEY);
     const shipment = await client.Shipment.create({
-      from_address: address,
-      to_address: {
+      // from_address: address,
+      // to_address: {
+      //   name: nombre,
+      //   street1: direccion.calle,
+      //   city: direccion.ciudad,
+      //   state: direccion.estado,
+      //   zip: direccion.codigoPostal,
+      //   country: "MX",
+      //   phone: telefono,
+      // },
+      from_address: {
+        street1: "417 MONTGOMERY ST",
+        street2: "FLOOR 5",
+        city: "SAN FRANCISCO",
+        state: "CA",
+        zip: "94104",
+        country: "US",
         name: nombre,
-        street1: direccion.calle,
-        city: direccion.ciudad,
-        state: direccion.estado,
-        zip: direccion.codigoPostal,
-        country: "MX",
         phone: telefono,
+      },
+      to_address: {
+        name: address.name,
+        street1: "179 N Harbor Dr",
+        city: "Redondo Beach",
+        state: "CA",
+        zip: "90277",
+        country: "US",
+        phone: address.phone,
       },
       parcel: {
         length: caja.largoTotal,
@@ -119,7 +224,7 @@ async function calcularPrecioEnvio(address, id_paciente) {
         weight: caja.pesoTotal,
       },
     });
-    shipments.push(shipment);
+    shipments.push({ id_terapeuta: caja.terapeuta.id, shipment });
   }
   cajas = cajas.map((caja) => ({
     ...caja,
@@ -129,5 +234,22 @@ async function calcularPrecioEnvio(address, id_paciente) {
     ...cajas,
     pago_total: cajas.reduce((acc, { pago_envio }) => acc + pago_envio, 0),
   };
-  return { cajas, shipments };
-}
+  return { cajas, shipments, carrito };
+};
+
+exports.realizarEnvio = async (req, res, next) => {
+  let { id_paquete } = req.params;
+  try {
+    let client = new EasyPost(process.env.EASYPOST_API_KEY);
+    const shipment = await client.Shipment.retrieve(id_paquete);
+    const boughtShipment = await client.Shipment.buy(
+      id_paquete,
+      shipment.lowestRate()
+    );
+    return res.json(boughtShipment);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal enviando el producto");
+  }
+};
+exports.obtenerEnvio = calcularPrecioEnvio;

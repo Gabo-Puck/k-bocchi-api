@@ -6,23 +6,32 @@ class DetalleTicket extends Model {
   }
 
   static relationMappings() {
-    const Producto = require("./Productos");
+    const Paquete = require("./Paquete");
+    const Terapeuta = require("./Terapeuta");
     const Ticket = require("./Ticket");
     return {
-      producto: {
-        relation: Model.BelongsToOneRelation,
-        modelClass: Producto,
-        join: {
-          from: "detalle_ticket.id_producto",
-          to: "productos.id",
-        },
-      },
       ticket: {
         relation: Model.BelongsToOneRelation,
         modelClass: Ticket,
         join: {
           from: "detalle_ticket.id_ticket",
           to: "tickets.id",
+        },
+      },
+      terapeuta: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Terapeuta,
+        join: {
+          from: "detalle_ticket.id_terapeuta",
+          to: "terapeutas.id",
+        },
+      },
+      paquete: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Paquete,
+        join: {
+          from: "detalle_ticket.id_paquete",
+          to: "paquetes.id",
         },
       },
     };
