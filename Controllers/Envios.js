@@ -20,6 +20,7 @@ const {
 } = require("../utils/estadoPaquete");
 const Paquete = require("../Models/Paquete");
 const { obtenerFechaActualMexico } = require("../utils/fechas");
+const { generarNotificacion } = require("../utils/notificaciones");
 const EN_PAQUETERIA = "unknown";
 const PREPARADO_ENVIO = "pre_transit";
 const EN_CAMINO = "in_transit";
@@ -28,7 +29,26 @@ const ENTREGADO = "delivered";
 const WEBHOOK_CREADO = "tracker.created";
 const WEBHOOK_ACTUALIZADO = "tracker.updated";
 exports.webhook = async (req, res, next) => {
-  let { id_paquete } = req.params;
+  try {
+    return res.json({ id_ut, id_up });
+  } catch (err) {
+    console.log(err);
+    res.json("x");
+  }
+  let {
+    description, //description indica la acción que activo nuestro webook
+    result: { status, shipment_id }, //status indica en que fase del envío se encuentra el paquete
+  } = req.body;
+  res.status(200).json("Ok");
+  let estado;
+
+  console.log(`ESTADO PARA: ${shipment_id}`);
+  if (description === WEBHOOK_CREADO) {
+    estado = ESTADO_PAQUETERIA;
+  }
+  if (description === WEBHOOK_ACTUALIZADO) {
+    estado = obtenerEstado(status);
+  }
   try {
     let {
       contenido: [
@@ -41,39 +61,33 @@ exports.webhook = async (req, res, next) => {
       ],
     } = await Paquete.query()
       .withGraphJoined("contenido.[terapeuta,ticket.[paciente]]")
-      .findOne({ "paquetes.id": id_paquete });
-    return res.json({ id_ut, id_up });
+      .findOne({ "paquetes.id": shipment_id });
+    let patch = {
+      estatus: estado,
+    };
+    if (estado === ESTADO_ENTREGADO){
+      patch = {
+        ...patch,
+        fecha_entrega: obtenerFechaActualMexico().toISOString(),
+      };
+      await generarNotificacion({
+        id_usuario:id_ut,
+        contexto_web:"/app/marketplace/terapeuta/pedidos",
+        descripcion:"Se ha entregado un producto a tu comprador",
+        titulo:"¡Paquete entregado!",
+      })
+      await generarNotificacion({
+        id_usuario:id_up,
+        contexto_web:"/app/marketplace/paciente/pedidos",
+        descripcion:"Se ha entregado tu paquete",
+        titulo:"¡Paquete entregado!",
+      })
+    }
+    await Paquete.query().findById(shipment_id).patch(patch);
   } catch (err) {
     console.log(err);
-    res.json("x");
   }
-  // let {
-  //   description, //description indica la acción que activo nuestro webook
-  //   result: { status, shipment_id }, //status indica en que fase del envío se encuentra el paquete
-  // } = req.body;
-  // res.status(200).json("Ok");
-  // let estado;
-  // console.log(`ESTADO PARA: ${shipment_id}`);
-  // if (description === WEBHOOK_CREADO) {
-  //   estado = ESTADO_PAQUETERIA;
-  // }
-  // if (description === WEBHOOK_ACTUALIZADO) {
-  //   estado = obtenerEstado(status);
-  // }
-  // try {
-  //   let patch = {
-  //     estatus: estado,
-  //   };
-  //   if (estado === ESTADO_ENTREGADO)
-  //     patch = {
-  //       ...patch,
-  //       fecha_entrega: obtenerFechaActualMexico().toISOString(),
-  //     };
-  //   await Paquete.query().findById(shipment_id).patch(patch);
-  // } catch (err) {
-  //   console.log(err);
-  // }
-  // console.log(estado);
+  console.log(estado);
 };
 
 function obtenerEstado(status) {
