@@ -29,12 +29,12 @@ const ENTREGADO = "delivered";
 const WEBHOOK_CREADO = "tracker.created";
 const WEBHOOK_ACTUALIZADO = "tracker.updated";
 exports.webhook = async (req, res, next) => {
-  try {
-    return res.json({ id_ut, id_up });
-  } catch (err) {
-    console.log(err);
-    res.json("x");
-  }
+  // try {
+  //   return res.json({ id_ut, id_up });
+  // } catch (err) {
+  //   console.log(err);
+  //   res.json("x");
+  // }
   let {
     description, //description indica la acción que activo nuestro webook
     result: { status, shipment_id }, //status indica en que fase del envío se encuentra el paquete
@@ -65,23 +65,23 @@ exports.webhook = async (req, res, next) => {
     let patch = {
       estatus: estado,
     };
-    if (estado === ESTADO_ENTREGADO){
+    if (estado === ESTADO_ENTREGADO) {
       patch = {
         ...patch,
         fecha_entrega: obtenerFechaActualMexico().toISOString(),
       };
       await generarNotificacion({
-        id_usuario:id_ut,
-        contexto_web:"/app/marketplace/terapeuta/pedidos",
-        descripcion:"Se ha entregado un producto a tu comprador",
-        titulo:"¡Paquete entregado!",
-      })
+        id_usuario: id_ut,
+        contexto_web: "/app/marketplace/terapeuta/pedidos",
+        descripcion: "Se ha entregado un producto a tu comprador",
+        titulo: "¡Paquete entregado!",
+      });
       await generarNotificacion({
-        id_usuario:id_up,
-        contexto_web:"/app/marketplace/paciente/pedidos",
-        descripcion:"Se ha entregado tu paquete",
-        titulo:"¡Paquete entregado!",
-      })
+        id_usuario: id_up,
+        contexto_web: "/app/marketplace/paciente/pedidos",
+        descripcion: "Se ha entregado tu paquete",
+        titulo: "¡Paquete entregado!",
+      });
     }
     await Paquete.query().findById(shipment_id).patch(patch);
   } catch (err) {
@@ -255,11 +255,19 @@ exports.realizarEnvio = async (req, res, next) => {
   let { id_paquete } = req.params;
   try {
     let client = new EasyPost(process.env.EASYPOST_API_KEY);
+    const paquete = await Paquete.query().findById(id_paquete);
+    if (!paquete)
+      return res.status(500).json("No se ha podido enviar el paquete");
     const shipment = await client.Shipment.retrieve(id_paquete);
     const boughtShipment = await client.Shipment.buy(
       id_paquete,
       shipment.lowestRate()
     );
+    let {
+      tracker: { id },
+    } = boughtShipment;
+    let paqueteEditado = await paquete.$query().patchAndFetch({ codigo_rastreo: id });
+    console.log({ paqueteEditado });
     return res.json(boughtShipment);
   } catch (err) {
     console.log(err);

@@ -16,12 +16,12 @@ const {
   getVinculacionStatus,
   obtenerVendedores,
 } = require("../Controllers/Paypal");
-const { webhook, crearEnvio, verificarDomicilio: verifyAddress, realizarEnvio } = require("../Controllers/Envios");
+const { webhook, crearEnvio, verificarDomicilio, realizarEnvio } = require("../Controllers/Envios");
 var router = express.Router();
 
 /**
  * @swagger
- * /envios/webhook/{id_paquete}:
+ * /envios/webhook:
  *  post:
  *    summary: Ruta que permite probar los webhooks de easypost
  *    tags: [Envios]
@@ -47,11 +47,10 @@ var router = express.Router();
  *  parameters:
  *      - in: path
  *        name: id_paquete
- *        required: true
  *        schema:
  *          type: string
  */
-router.post("/webhook/:id_paquete", webhook);
+router.post("/webhook", webhook);
 /**
  * @swagger
  * /envios/create-shipment:
@@ -135,7 +134,7 @@ router.post("/calculate-cost", crearEnvio);
  *              type: string
 
  */
-router.post("/verify-address", verifyAddress);
+router.post("/verify-address", verificarDomicilio);
 
 /**
  * @swagger
@@ -164,7 +163,7 @@ router.post("/verify-address", verifyAddress);
  *              type: string
 
  */
-router.post("/crear-envio", verifyAddress);
+router.post("/crear-envio", verificarDomicilio);
 /**
  * @swagger
  * /envios/buy-shipment/{id_paquete}:

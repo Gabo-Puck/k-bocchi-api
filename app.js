@@ -22,6 +22,8 @@ var carritoRouter = require("./routes/carrito");
 var pagosRouter = require("./routes/pagos");
 var ticketRouter = require("./routes/ticket");
 var enviosRouter = require("./routes/envios");
+var paquetesRouter = require("./routes/paquetes");
+var ventasRouter = require("./routes/ventas");
 var fileUpload = require("express-fileupload");
 var { knex } = require("./setup/knexfile");
 
@@ -79,6 +81,8 @@ app.use("/carrito", carritoRouter);
 app.use("/pagos", pagosRouter);
 app.use("/envios", enviosRouter);
 app.use("/ticket", ticketRouter);
+app.use("/paquetes", paquetesRouter);
+app.use("/ventas", ventasRouter);
 app.use("/", indexRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
