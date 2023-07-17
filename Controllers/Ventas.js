@@ -20,13 +20,26 @@ exports.verTicket = async (req, res, next) => {
   let { id_terapeuta } = req.query;
   try {
     let ticket = await Ticket.query()
-      .withGraphJoined("detalles")
+      .withGraphJoined("[detalles.terapeuta.usuario,paciente.usuario]")
       .modifyGraph("detalles", (builder) => {
         builder.select(["*", raw("FN_SELEC_IMAGEN(id_producto)").as("imagen")]);
         if (id_terapeuta) {
           builder.where("id_terapeuta", "=", id_terapeuta);
         }
       })
+      .modifyGraph("detalles.terapeuta", (builder) => {
+        builder.select(["id", "id_usuario"]);
+      })
+      .modifyGraph("detalles.terapeuta.usuario", (builder) => {
+        builder.select(["id", "nombre", "foto_perfil"]);
+      })
+      .modifyGraph("paciente", (builder) => {
+        builder.select(["id", "id_usuario"]);
+      })
+      .modifyGraph("paciente.usuario", (builder) => {
+        builder.select(["id", "nombre", "foto_perfil"]);
+      })
+
       .findById(id_ticket);
     if (!ticket) return res.status(404).json("No se enontro el ticket");
     return res.status(200).json(ticket);
