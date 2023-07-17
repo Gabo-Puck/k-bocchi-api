@@ -70,15 +70,16 @@ exports.webhook = async (req, res, next) => {
         ...patch,
         fecha_entrega: obtenerFechaActualMexico().toISOString(),
       };
+      
       await generarNotificacion({
         id_usuario: id_ut,
-        contexto_web: "/app/marketplace/terapeuta/pedidos",
+        contexto_web: `/app/marketplace/envios/${shipment_id}`,
         descripcion: "Se ha entregado un producto a tu comprador",
         titulo: "¡Paquete entregado!",
       });
       await generarNotificacion({
         id_usuario: id_up,
-        contexto_web: "/app/marketplace/paciente/pedidos",
+        contexto_web: `/app/marketplace/envios/${shipment_id}`,
         descripcion: "Se ha entregado tu paquete",
         titulo: "¡Paquete entregado!",
       });
