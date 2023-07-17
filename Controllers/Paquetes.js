@@ -35,9 +35,21 @@ exports.verPaquete = async (req, res, next) => {
   const client = new EasyPost(process.env.EASYPOST_API_KEY);
   try {
     let paquete = await Paquete.query()
-      .withGraphJoined("ticket")
+      .withGraphJoined("[ticket.paciente.usuario,terapeuta.usuario]")
       .modifyGraph("ticket", (builder) => {
         builder.select("id");
+      })
+      .modifyGraph("terapeuta", (builder) => {
+        builder.select("id","id_usuario");
+      })
+      .modifyGraph("terapeuta.usuario", (builder) => {
+        builder.select("id","nombre");
+      })
+      .modifyGraph("ticket.paciente", (builder) => {
+        builder.select("id","id_usuario");
+      })
+      .modifyGraph("ticket.paciente.usuario", (builder) => {
+        builder.select("id","nombre");
       })
       .findById(id_paquete);
     if (!paquete) return res.status(404).json("No se enontro el paquete");
