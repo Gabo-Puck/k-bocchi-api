@@ -1,6 +1,13 @@
 const { raw } = require("objection");
 const Paquete = require("../Models/Paquete");
 const Ticket = require("../Models/Ticket");
+const date = require("date-and-time");
+const {
+  patternFecha,
+  obtenerFechaActualMexico,
+  patternFechaCompleta,
+} = require("../utils/fechas");
+const DetalleTicket = require("../Models/DetalleTicket");
 
 exports.verComprasPaciente = async (req, res, next) => {
   let { id_paciente } = req.params;
@@ -50,13 +57,49 @@ exports.verTicket = async (req, res, next) => {
 };
 exports.verVentasTerapeuta = async (req, res, next) => {
   let { id_terapeuta } = req.params;
+  let { mes } = req.query;
+  let anioActual = obtenerFechaActualMexico().getFullYear();
+  let f1 = date.parse(`${mes} ${anioActual}`, "M YYYY"); //fecha de inicio del mes actual / fecha final del mes pasado
+  let f2 = date.addMonths(f1, 1); //fecha final del mes actual
+  let f3 = date.addMonths(f1, -1); //fecha de inicio del mes pasado
+  console.log({ f1, f2, f3 });
   try {
-    let ventas = await Ticket.query()
-      .select(["tickets.id", "fecha", "id_paciente"])
-      .joinRelated("detalles")
-      .where("detalles.id_terapeuta", "=", id_terapeuta)
-      .orderBy("fecha", "DESC");
-    return res.status(200).json(ventas);
+    //las ventas del mes actual
+    let ventas_actual = await DetalleTicket.query()
+      .joinRelated("ticket")
+      .select(["id_producto", "nombre", "id_ticket"])
+      .sum("cantidad as cantidad_vendida")
+      .where("id_terapeuta", "=", id_terapeuta)
+      .groupBy("id_producto")
+      .where((builder) => {
+        builder
+          .where("ticket.fecha", ">=", date.format(f1, patternFechaCompleta))
+          .andWhere("ticket.fecha", "<", date.format(f2, patternFechaCompleta));
+      })
+      .debug()
+      .orderBy("cantidad_vendida", "DESC");
+    //las ventas del mes actual
+    let ventas_anterior;
+    if (mes > 1)
+      ventas_anterior = await DetalleTicket.query()
+        .joinRelated("ticket")
+        .select(["id_producto", "nombre", "id_ticket"])
+        .sum("cantidad as cantidad_vendida")
+        .where("id_terapeuta", "=", id_terapeuta)
+        .groupBy("id_producto")
+        .where((builder) => {
+          builder
+            .where("ticket.fecha", ">=", date.format(f3, patternFechaCompleta))
+            .andWhere(
+              "ticket.fecha",
+              "<",
+              date.format(f1, patternFechaCompleta)
+            );
+        })
+        .debug()
+        .orderBy("cantidad_vendida", "DESC");
+    // .orderBy("fecha", "DESC");
+    return res.status(200).json({ ventas_anterior, ventas_actual });
   } catch (error) {
     console.log(error);
     return res.status(500).json("Algo ha salido mal");
