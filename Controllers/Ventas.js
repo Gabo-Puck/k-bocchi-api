@@ -55,7 +55,7 @@ exports.verTicket = async (req, res, next) => {
     return res.status(500).json("Algo ha salido mal");
   }
 };
-exports.verVentasTerapeuta = async (req, res, next) => {
+exports.verReporteTerapeuta = async (req, res, next) => {
   let { id_terapeuta } = req.params;
   let { mes } = req.query;
   let anioActual = obtenerFechaActualMexico().getFullYear();
@@ -100,6 +100,32 @@ exports.verVentasTerapeuta = async (req, res, next) => {
         .orderBy("cantidad_vendida", "DESC");
     // .orderBy("fecha", "DESC");
     return res.status(200).json({ ventas_anterior, ventas_actual });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+exports.verVentasTerapeuta = async (req, res, next) => {
+  let { id_terapeuta } = req.params;
+  let { mes } = req.query;
+  let anioActual = obtenerFechaActualMexico().getFullYear();
+  let f1 = date.parse(`${mes} ${anioActual}`, "M YYYY"); //fecha de inicio del mes actual / fecha final del mes pasado
+  let f2 = date.addMonths(f1, 1); //fecha final del mes actual
+  let f3 = date.addMonths(f1, -1); //fecha de inicio del mes pasado
+  console.log({ f1, f2, f3 });
+  try {
+    //las ventas del mes actual
+    let ventas = await DetalleTicket.query()
+      .select(["*", raw("FN_SELEC_IMAGEN(id_producto)").as("imagen")])
+      .joinRelated("ticket")
+      .where("id_terapeuta", "=", id_terapeuta)
+      .where((builder) => {
+        builder
+          .where("ticket.fecha", ">=", date.format(f1, patternFechaCompleta))
+          .andWhere("ticket.fecha", "<", date.format(f2, patternFechaCompleta));
+      })
+      .orderBy("fecha", "DESC");
+    return res.status(200).json(ventas);
   } catch (error) {
     console.log(error);
     return res.status(500).json("Algo ha salido mal");

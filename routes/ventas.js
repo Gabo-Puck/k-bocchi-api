@@ -2,7 +2,8 @@ const express = require("express");
 const {
   verComprasPaciente,
   verTicket,
-  verVentasTerapeuta,
+  verReporteTerapeuta,
+  verVentasTerapeuta
 } = require("../Controllers/Ventas");
 
 var router = express.Router();
@@ -109,26 +110,21 @@ router.get("/paciente/:id_paciente", verComprasPaciente);
  *            schema:
  *              type: string
  *          - in: query
- *            name: fecha_inicio
+ *            name: mes
  *            required: true
  *            schema:
- *              type: string
- *          - in: query
- *            name: fecha_fin
- *            required: true
- *            schema:
- *              type: string
+ *              type: integer
  */
 router.get("/terapeuta/:id_terapeuta", verVentasTerapeuta);
 /**
  * @swagger
  * /ventas/terapeuta/reporte/{id_terapeuta}:
  *  get:
- *    summary: Ruta que permite obtener las ventas del terapeuta
+ *    summary: Ruta que permite obtener las ventas del terapeuta para generar un reporte
  *    tags: [Ventas]
  *    responses:
  *      200:
- *        description: Devuelve un arreglo con las ventas
+ *        description: Devuelve un arreglo con las ventas ordenadas por cantidad vendida
  *        content:
  *          application/json:
  *            schema:
@@ -157,6 +153,7 @@ router.get("/terapeuta/:id_terapeuta", verVentasTerapeuta);
  *            schema:
  *              type: number
  */
-router.get("/terapeuta/reporte/:id_terapeuta", verVentasTerapeuta);
+router.get("/terapeuta/reporte/:id_terapeuta", verReporteTerapeuta);
+
 
 module.exports = router;
