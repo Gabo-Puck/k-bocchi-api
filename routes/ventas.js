@@ -3,7 +3,8 @@ const {
   verComprasPaciente,
   verTicket,
   verReporteTerapeuta,
-  verVentasTerapeuta
+  verVentasTerapeuta,
+  notificarNuevoReporte,
 } = require("../Controllers/Ventas");
 
 var router = express.Router();
@@ -154,6 +155,70 @@ router.get("/terapeuta/:id_terapeuta", verVentasTerapeuta);
  *              type: number
  */
 router.get("/terapeuta/reporte/:id_terapeuta", verReporteTerapeuta);
-
+/**
+ * @swagger
+ * /ventas/terapeuta/antiguas:
+ *  delete:
+ *    summary: Ruta que permite eliminar las ventas con más de un año de antiguedad
+ *    tags: [Ventas]
+ *    responses:
+ *      200:
+ *        description: Devuelve un arreglo con las ventas ordenadas por cantidad vendida
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *      404:
+ *        description: Devuelve un mensaje indicando que no existe el terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *      500:
+ *        description: Devuelve un mensaje de error del servidor
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *    parameters:
+ *          - in: path
+ *            name: id_terapeuta
+ *            required: true
+ *            schema:
+ *              type: string
+ *          - in: query
+ *            name: mes
+ *            required: true
+ *            schema:
+ *              type: number
+ */
+router.delete("/terapeuta/antiguas", verReporteTerapeuta);
+/**
+ * @swagger
+ * /ventas/terapeuta/reportes/notificar:
+ *  get:
+ *    summary: Ruta que permite notificar a los terapeutas que hay un nuevo reporte de ventas
+ *    tags: [Ventas]
+ *    responses:
+ *      200:
+ *        description: Devuelve un mensaje de ok
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      500:
+ *        description: Devuelve un mensaje de error del servidor
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *  parameters:
+ *      - in: query
+ *        name: mesPrueba
+ *        description: Es el numero del mes (en base 0) que deseamos probar.
+ *        schema:
+ *          type: integer
+ */
+router.get("/terapeuta/reportes/notificar", notificarNuevoReporte);
 
 module.exports = router;

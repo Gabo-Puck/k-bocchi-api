@@ -5,6 +5,8 @@ class Terapeuta extends Model {
   }
 
   static relationMappings() {
+    const Ticket = require("./Ticket");
+    const DetalleTicket = require("./DetalleTicket");
     const NotaCompartida = require("./NotaCompartida");
     const Producto = require("./Productos");
     const Nota = require("./Nota");
@@ -92,6 +94,19 @@ class Terapeuta extends Model {
         join: {
           from: "terapeutas.id",
           to: "productos.id_terapeuta",
+        },
+      },
+      tickets: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Ticket,
+        join: {
+          from: "terapeutas.id",
+          through: {
+            modelClass: DetalleTicket,
+            from: "detalle_ticket.id_terapeuta",
+            to: "detalle_ticket.id_ticket",
+          },
+          to: "tickets.id",
         },
       },
     };

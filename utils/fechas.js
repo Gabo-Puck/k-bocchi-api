@@ -51,6 +51,33 @@ const obtenerFechaHoraComponent = (fecha = obtenerFechaActualMexico()) => {
   let h = obtenerHoraComponent(fecha);
   return `${f} ${h}`;
 };
+const meses = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
+function getMes(index) {
+  if (index == -2) {
+    let anio = new Date().getFullYear() - 1;
+    let mes = meses[meses.length - 2];
+    return `${mes} (${anio})`;
+  }
+  if (index == -1) {
+    let anio = new Date().getFullYear() - 1;
+    let mes = meses[meses.length - 1];
+    return `${mes} (${anio})`;
+  }
+  return meses[index];
+}
 module.exports = {
   obtenerFechaActualMexico,
   patternFecha,
@@ -59,5 +86,7 @@ module.exports = {
   obtenerFechaComponent,
   obtenerFechaTiempoComponent,
   obtenerHoraComponent,
-  obtenerFechaHoraComponent
+  obtenerFechaHoraComponent,
+  meses,
+  getMes
 };
