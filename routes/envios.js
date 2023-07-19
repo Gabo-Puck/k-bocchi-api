@@ -16,7 +16,7 @@ const {
   getVinculacionStatus,
   obtenerVendedores,
 } = require("../Controllers/Paypal");
-const { webhook, crearEnvio, verificarDomicilio, realizarEnvio } = require("../Controllers/Envios");
+const { webhook, crearEnvio, verificarDomicilio, realizarEnvio, verEnvio } = require("../Controllers/Envios");
 var router = express.Router();
 
 /**
@@ -197,4 +197,37 @@ router.post("/crear-envio", verificarDomicilio);
  *          type: string
  */
 router.post("/buy-shipment/:id_paquete", realizarEnvio);
+/**
+ * @swagger
+ * /envios/retrieve-shipment/{id_paquete}:
+ *  get:
+ *    summary: Ruta para obtener un envio
+ *    tags: [Envios]
+ *    responses:
+ *      200:
+ *        description: Devuelve el envio encontrado
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *      404:
+ *        description: Devuelve un mensaje de error indicando que no existe el enio
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *      500:
+ *        description: Devuelve un mensaje de error del servidor
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *  parameters:
+ *      - in: path
+ *        name: id_paquete
+ *        required: true
+ *        schema:
+ *          type: string
+ */
+router.get("/retrieve-shipment/:id_paquete", verEnvio);
 module.exports = router;

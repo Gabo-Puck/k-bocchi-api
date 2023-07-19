@@ -1,3 +1,4 @@
+const MAX_SIZE = 130;
 exports.obtenerTamanoCajas = (carrito) => {
   try {
     let cajas = [];
@@ -35,6 +36,14 @@ exports.obtenerTamanoCajas = (carrito) => {
         largoTotal = largoTotal + p.largo * cantidad;
         pesoTotal = pesoTotal + p.peso;
       });
+      let girth = 2 * anchoTotal + 2 * alturaTotal;
+      let size = largoTotal + girth;
+      if (size > MAX_SIZE) {
+        anchoTotal /= 2;
+        alturaTotal /= 2;
+      }
+      if (anchoTotal <= 0) anchoTotal = 5;
+      if (alturaTotal <= 0) alturaTotal = 5;
       cajas.push({
         anchoTotal,
         alturaTotal,

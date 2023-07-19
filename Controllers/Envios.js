@@ -70,7 +70,7 @@ exports.webhook = async (req, res, next) => {
         ...patch,
         fecha_entrega: obtenerFechaActualMexico().toISOString(),
       };
-      
+
       await generarNotificacion({
         id_usuario: id_ut,
         contexto_web: `/app/marketplace/envios/${shipment_id}`,
@@ -267,9 +267,26 @@ exports.realizarEnvio = async (req, res, next) => {
     let {
       tracker: { id },
     } = boughtShipment;
-    let paqueteEditado = await paquete.$query().patchAndFetch({ codigo_rastreo: id });
+    let paqueteEditado = await paquete
+      .$query()
+      .patchAndFetch({ codigo_rastreo: id });
     console.log({ paqueteEditado });
     return res.json(boughtShipment);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal enviando el producto");
+  }
+};
+exports.verEnvio = async (req, res, next) => {
+  let { id_paquete } = req.params;
+  try {
+    let client = new EasyPost(process.env.EASYPOST_API_KEY);
+    const paquete = await Paquete.query().findById(id_paquete);
+    if (!paquete)
+      return res.status(500).json("No se ha podido enviar el paquete");
+    const shipment = await client.Shipment.retrieve(id_paquete);
+    console.log({ shipment });
+    return res.json(shipment);
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo ha salido mal enviando el producto");
