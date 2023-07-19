@@ -5,6 +5,7 @@ const {
   verReporteTerapeuta,
   verVentasTerapeuta,
   notificarNuevoReporte,
+  eliminarVentasAntiguas,
 } = require("../Controllers/Ventas");
 
 var router = express.Router();
@@ -163,36 +164,19 @@ router.get("/terapeuta/reporte/:id_terapeuta", verReporteTerapeuta);
  *    tags: [Ventas]
  *    responses:
  *      200:
- *        description: Devuelve un arreglo con las ventas ordenadas por cantidad vendida
+ *        description: Devuelve cuantos tickets se eliminaron
  *        content:
  *          application/json:
  *            schema:
- *              type: object
- *      404:
- *        description: Devuelve un mensaje indicando que no existe el terapeuta
- *        content:
- *          application/json:
- *            schema:
- *              type: object
+ *              type: integer
  *      500:
  *        description: Devuelve un mensaje de error del servidor
  *        content:
  *          application/json:
  *            schema:
  *              type: string
- *    parameters:
- *          - in: path
- *            name: id_terapeuta
- *            required: true
- *            schema:
- *              type: string
- *          - in: query
- *            name: mes
- *            required: true
- *            schema:
- *              type: number
  */
-router.delete("/terapeuta/antiguas", verReporteTerapeuta);
+router.delete("/terapeuta/antiguas", eliminarVentasAntiguas);
 /**
  * @swagger
  * /ventas/terapeuta/reportes/notificar:

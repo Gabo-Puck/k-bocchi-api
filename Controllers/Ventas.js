@@ -269,3 +269,25 @@ exports.notificarNuevoReporte = async (req, res, next) => {
     return res.status(500).json("Algo ha salido mal :c");
   }
 };
+
+exports.eliminarVentasAntiguas = async (req, res, next) => {
+  try {
+    /**
+     *
+     */
+
+    let fechaActual;
+    fechaActual = obtenerFechaActualMexico();
+    let f1 = date.format(fechaActual, patternFechaCompleta); //fecha actual
+    //Obtenemos todos los tickets con un año de antiguedad
+    let ticketsBorrados = await Ticket.query()
+      .whereRaw(`fecha <= DATE_SUB("${f1}",INTERVAL 1 YEAR)`)
+      .delete()
+      .debug();
+
+    return res.status(200).json({ ticketsBorrados });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json("Algo ha salido mal :c");
+  }
+};
