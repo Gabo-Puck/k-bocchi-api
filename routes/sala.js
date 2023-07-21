@@ -222,6 +222,12 @@ router.delete("/:id_sala", eliminarSala);
  *           application/json:
  *             schema:
  *               type: string
+ *      "403":
+ *         description: Devuelve un mensaje indicando que aun no se puede acceder a la sala
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
  *  parameters:
  *      - in: path
  *        name: codigo_acceso

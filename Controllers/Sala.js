@@ -90,6 +90,7 @@ exports.revisarAcceso = async (req, res, next) => {
     let acceso = await Sala.query()
       .withGraphJoined("[terapeuta.usuario,paciente.usuario]")
       .findOne({ codigo_acceso });
+    let fechaActual = obtenerFechaActualMexico();
     //Si no encontramos una sala con ese codigo de acceso lo hacemos saber
     if (!acceso) return res.status(404).json("No se encontro la sala");
     //Obtenemos la id de los usuarios participantes de la sala
@@ -105,11 +106,15 @@ exports.revisarAcceso = async (req, res, next) => {
     } = acceso;
     //Checamos si el usuario que solicita acceso es igual a alguno de los participantes de la sala
 
-    //si es así devolvemos un status 200
-    if (id_usuario == id_ut || id_usuario == id_up)
-      return res.status(200).json("Bienvenido");
     //Si no es asi, regresamos un 401
-    return res.status(401).json("No tienes acceso a esta sala");
+    if (!(id_usuario == id_ut || id_usuario == id_up))
+      return res.status(401).json("No tienes acceso a esta sala");
+
+    //revisamos si ya se puede acceder a la sala
+    if (acceso.fecha_inicio > fechaActual)
+      return res.status(403).json("Aún no puedes entrar a la sala");
+    //si es así devolvemos un status 200
+    return res.status(200).json("Bienvenido");
   } catch (error) {
     console.log(error);
     return res.status(500).json("Algo ha salido mal");
