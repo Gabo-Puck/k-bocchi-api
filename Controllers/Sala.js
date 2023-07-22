@@ -31,6 +31,7 @@ exports.crearSala = async (req, res, next) => {
       ...sala,
       codigo_acceso: codigoInvitacion,
     });
+    salaCreada = await salaCreada.$query().withGraphJoined("paciente.usuario");
     return res.status(200).json(salaCreada);
   } catch (error) {
     console.log(error);
@@ -46,6 +47,9 @@ exports.modificarSala = async (req, res, next) => {
     let salaModificada = await salaEncontrada
       .$query()
       .patchAndFetch({ ...sala });
+    salaModificada = await salaModificada
+      .$query()
+      .withGraphJoined("paciente.usuario");
     return res.status(200).json(salaModificada);
   } catch (error) {
     console.log(error);
@@ -114,7 +118,7 @@ exports.revisarAcceso = async (req, res, next) => {
     if (acceso.fecha_inicio > fechaActual)
       return res.status(403).json("Aún no puedes entrar a la sala");
     //si es así devolvemos un status 200
-    return res.status(200).json("Bienvenido");
+    return res.status(200).json(acceso);
   } catch (error) {
     console.log(error);
     return res.status(500).json("Algo ha salido mal");

@@ -9,7 +9,7 @@ class Sala extends Model {
   }
   $beforeUpdate() {
     delete this.codigo_acceso;
-    this.fecha_ultima_desconexion = this.fecha_inicio;
+    if (this.fecha_inicio) this.fecha_ultima_desconexion = this.fecha_inicio;
   }
   static get relationMappings() {
     const Terapeuta = require("./Terapeuta");

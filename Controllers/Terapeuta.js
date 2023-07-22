@@ -41,7 +41,7 @@ exports.verTerapeutaDetalles = async (req, res, next) => {
               `FN_SELEC_FECHA(comentarios.fecha_edicion,comentarios.fecha_creacion)`
             ).as("fecha_ordenacion")
           )
-          .orderBy("fecha_ordenacion","DESC");
+          .orderBy("fecha_ordenacion", "DESC");
       });
     if (!terapeuta) return res.status(404).json("No existe ese terapeuta");
 
@@ -219,7 +219,7 @@ exports.verPacientes = async (req, res, next) => {
     pacientes = pacientes.map((p) => {
       let usuario = p.usuario;
       delete p.usuario;
-      return { ...p, ...usuario };
+      return { ...p, ...usuario, id_paciente: p.id };
     });
     return res.status(200).json(pacientes);
   } catch (err) {
