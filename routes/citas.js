@@ -7,6 +7,7 @@ const {
   verCitasTerapeuta,
   obtenerCitasFechasExcluyente,
   verAgenda,
+  notificarCita,
 } = require("../Controllers/Citas");
 const express = require("express");
 const { verHorario } = require("../Controllers/Horario");
@@ -183,6 +184,27 @@ router.patch("/", modificarCita);
 
 /**
  * @swagger
+ * /citas/notificar:
+ *  get:
+ *    summary: Permite notificar de sus citas a los terapeutas mediante sms
+ *    tags: [Citas]
+ *    responses:
+ *      "200":
+ *        description: Devuelve la respuesta de twilio
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ */
+router.get("/notificar", notificarCita);
+/**
+ * @swagger
  * /citas/{id}:
  *  get:
  *    summary: Permite obtener una cita
@@ -213,6 +235,7 @@ router.patch("/", modificarCita);
  *        required: true
  */
 router.get("/:id", verCita);
+
 
 /**
  * @swagger
