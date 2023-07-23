@@ -16,7 +16,8 @@ exports.verSalas = async (req, res, next) => {
       .modifyGraph("paciente.usuario", (builder) => {
         builder.select(["id", "nombre", "foto_perfil"]);
       })
-      .where("id_terapeuta", "=", id_terapeuta);
+      .where("id_terapeuta", "=", id_terapeuta)
+      .orderBy("fecha_inicio","DESC");
     return res.status(200).json(salas);
   } catch (error) {
     console.log(error);

@@ -6,6 +6,7 @@ const {
   verTodasCitas,
   verCitasTerapeuta,
   obtenerCitasFechasExcluyente,
+  verAgenda,
 } = require("../Controllers/Citas");
 const express = require("express");
 const { verHorario } = require("../Controllers/Horario");
@@ -487,6 +488,51 @@ router.get(
 router.get(
   "/obtenerCitas/:id_terapeuta",
   verCitasTerapeuta,
+  (req, res, next) => {
+    console.log(res.body);
+    res.status(200).json(res.body);
+  }
+);
+/**
+ * @swagger
+ * /citas/agenda/{id_terapeuta}:
+ *  get:
+ *    summary: Permite obtener las citas de un terapeuta
+ *    description: Permite obtener todas las citas del terapeuta a partir del día de hoy
+ *    tags: [Citas]
+ *    responses:
+ *      "200":
+ *        description: Devuelve las citas de un terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                  type: object
+ *                  $ref: '#/components/schemas/Cita'
+ *      "404":
+ *        description: Devuelve un mensaje indicando que no existe el terapeuta
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *    parameters:
+ *      - in: path
+ *        name: id_terapeuta
+ *        required: true
+ *        schema:
+ *          type: integer
+ *
+ */
+router.get(
+  "/agenda/:id_terapeuta",
+  verAgenda,
   (req, res, next) => {
     console.log(res.body);
     res.status(200).json(res.body);

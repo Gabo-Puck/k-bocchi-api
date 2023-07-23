@@ -1,6 +1,6 @@
 const Cita = require("../Models/Cita");
 const date = require("date-and-time");
-const { obtenerFechaActualMexico, patternFecha } = require("../utils/fechas");
+const { obtenerFechaActualMexico, patternFecha, obtenerFechaComponent, patternFechaCompleta } = require("../utils/fechas");
 // const patternFecha2 = date.compile("YYYY-MM-DD HH:mm:ss"); //Formateador que permite convertir un objeto Date a un string con el formato indicado de fecha
 
 exports.crearCita = async (req, res, next) => {
@@ -129,6 +129,46 @@ exports.verCitasTerapeuta = async (req, res, next) => {
     return res.status(500).json("Algo ha salido mal");
   }
 };
+exports.verAgenda = async (req, res, next) => {
+  try {
+    let { id_terapeuta } = req.params;
+    let fecha = obtenerFechaActualMexico();
+    let citas = await Cita.query()
+      .withGraphJoined("paciente_datos.[usuario]")
+      .where("id_terapeuta", "=", id_terapeuta)
+      .modify((builder) => {
+        let fecha1 = date.format(fecha, patternFechaCompleta);
+        builder.andWhere("fecha", ">=", fecha1);
+      })
+      .modifyGraph("paciente_datos.usuario", (builder) => {
+        builder.select("nombre", "foto_perfil");
+      })
+      .orderBy("fecha", "ASC");
+    citas = citas.map((m) => {
+      let x = { ...m.paciente_datos.usuario };
+      delete m.paciente_datos;
+      return { ...m, ...x };
+    });
+    let x = agruparPorFechas(citas);
+    res.body = { ...res.body, citas: x };
+    next();
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json("Algo ha salido mal");
+  }
+};
+function agruparPorFechas(citas) {
+  let fechas = {};
+  citas.forEach((cita) => {
+    let fecha = obtenerFechaComponent(cita.fecha);
+    if (!fechas[fecha]) {
+      fechas[fecha] = [];
+    }
+    fechas[fecha].push(cita);
+  });
+  fechas = Object.keys(fechas).map((f) => ({ header: f, citas: fechas[f] }));
+  return fechas;
+}
 
 // {
 //   "id_paciente": 78,
