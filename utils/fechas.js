@@ -1,6 +1,7 @@
 const date = require("date-and-time");
 const patternFecha = date.compile("YYYY-MM-DD"); //Formateador que permite convertir un objeto Date a un string con el formato indicado de fecha
 const patternFechaCompleta = date.compile("YYYY-MM-DD HH:mm:ss"); //Formateador que permite convertir un objeto Date a un string con el formato indicado de horas
+const patternFechaDisplay = date.compile("dddd D de MMMM de YYYY"); //Formateador que permite convertir un objeto Date a un string con el formato indicado de horas. Formato más amigable
 const patternHora = date.compile("HH:mm:ss"); //Formateador que permite convertir un objeto Date a un string con el formato indicado de fecha
 /**
  *  Función que permite obtener la fecha actual en America/Mexico_City
@@ -88,5 +89,6 @@ module.exports = {
   obtenerHoraComponent,
   obtenerFechaHoraComponent,
   meses,
-  getMes
+  getMes,
+  patternFechaDisplay
 };

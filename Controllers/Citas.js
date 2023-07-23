@@ -1,13 +1,17 @@
 const Cita = require("../Models/Cita");
 const date = require("date-and-time");
+const es = require("date-and-time/locale/es");
+date.locale(es);
 const {
   obtenerFechaActualMexico,
   patternFecha,
   obtenerFechaComponent,
   patternFechaCompleta,
   patternHora,
+  patternFechaDisplay,
 } = require("../utils/fechas");
 const { twilioClient, TWILIO_NUMBER } = require("../setup/twilio");
+const { generarNotificacion } = require("../utils/notificaciones");
 
 // const patternFecha2 = date.compile("YYYY-MM-DD HH:mm:ss"); //Formateador que permite convertir un objeto Date a un string con el formato indicado de fecha
 
@@ -25,9 +29,49 @@ exports.crearCita = async (req, res, next) => {
 exports.borrarCita = async (req, res, next) => {
   try {
     let { id } = req.params;
-    let cita = await Cita.query().findById(id);
+    //obtenemos la cita con todo y los datos del paciente y terapeuta
+    let cita = await Cita.query()
+      .withGraphFetched("[terapeuta_datos.usuario,paciente_datos.usuario]")
+      .findById(id);
+    //Si no existe retornamos un 404
     if (!cita) return res.status(404).json("No se encontro la cita");
+    //Destructuramos las propiedades nombre e id de los objetos usuario de terapeuta_datos y paciente_datos respectivamente
+    let {
+      terapeuta_datos: {
+        usuario: { nombre: nombre_terapeuta, id: id_usuario_terapeuta },
+      },
+      paciente_datos: {
+        usuario: { nombre: nombre_paciente, id: id_usuario_paciente },
+      },
+      fecha,
+    } = cita;
+    //Creamos el string que representa la fecha de la cita en un formato más "amigable"
+    let fechaCitaDisplayNotificacion = date.format(
+      new Date(fecha),
+      patternFechaDisplay
+    );
+    //Creamos el string que representa la hora de la cita
+    let horaCitaDisplayNotificacion = date.format(new Date(fecha), patternHora);
+
+    //Borramos la cita
     await cita.$query().delete();
+    //Mediante la funcion de generarNotificacion generamos la notificación para cada usuario
+    //terapeuta
+    await generarNotificacion({
+      id_usuario: id_usuario_terapeuta,
+      contexto_web: "/app/terapeuta/agenda",
+      contexto_movil: "",
+      titulo: "Cita cancelada",
+      descripcion: `Tu cita del día ${fechaCitaDisplayNotificacion} a las ${horaCitaDisplayNotificacion} con ${nombre_paciente} ha sido cancelada`,
+    });
+    //paciente
+    await generarNotificacion({
+      id_usuario: id_usuario_paciente,
+      contexto_web: "/app/paciente/chatbot",
+      contexto_movil: "",
+      titulo: "Cita cancelada",
+      descripcion: `Tu cita del día ${fechaCitaDisplayNotificacion} a las ${horaCitaDisplayNotificacion} con ${nombre_terapeuta} ha sido cancelada. ¡Agenda otra!`,
+    });
     return res.status(200).json(cita);
   } catch (err) {
     console.log(err);
