@@ -226,7 +226,12 @@ router.post("/login", loginTerapeuta);
  *
  *
  */
-router.get("/buscar", buscarTerapeutas);
+router.get("/buscar", buscarTerapeutas, (req, res, next) => {
+  return res.json({
+    count: res.count,
+    resultados: res.resultados,
+  });
+});
 /**
  * @swagger
  * /usuarios/fisioterapeutas/{id_terapeuta}:
@@ -492,7 +497,11 @@ router.get("/pacientes/:id_terapeuta", existeTerapeuta, verPacientes);
  *
  *
  */
-router.get("/bitacora/pacientes/:id_terapeuta", existeTerapeuta, verPacientesBitacora);
+router.get(
+  "/bitacora/pacientes/:id_terapeuta",
+  existeTerapeuta,
+  verPacientesBitacora
+);
 /**
  * @swagger
  * /usuarios/fisioterapeutas/horario:

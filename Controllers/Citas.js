@@ -12,6 +12,13 @@ const {
 } = require("../utils/fechas");
 const { twilioClient, TWILIO_NUMBER } = require("../setup/twilio");
 const { generarNotificacion } = require("../utils/notificaciones");
+const {
+  checkDentroHorario,
+  checkFechaPosterior,
+  checkCitasDisponibles,
+  obtenerHorariosDisponibles,
+} = require("./AlgoritmoCitas");
+const Horario = require("../Models/Horario");
 
 // const patternFecha2 = date.compile("YYYY-MM-DD HH:mm:ss"); //Formateador que permite convertir un objeto Date a un string con el formato indicado de fecha
 
@@ -20,6 +27,79 @@ exports.crearCita = async (req, res, next) => {
     let cita = req.body;
     let citaCreada = await Cita.query().insertAndFetch(cita);
     return res.status(200).json(citaCreada);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json("Algo ha salido mal");
+  }
+};
+//Emergencia
+exports.obtenerCitasPorFecha = async (req, res, next) => {
+  try {
+    let { fecha } = req.query;
+    let { count, resultados } = res;
+    // console.log({ count, resultados, fecha });
+    if (
+      !date.isValid(fecha, patternFechaCompleta) ||
+      !/\d{4}-\d{2}-\d{2}/g.test(fecha)
+    ) {
+      return res.status(400).json("La fecha esta en un formato incorrecto");
+    }
+    let fechaSolicitada = date.format(new Date(fecha), patternFecha);
+    let horaSolicitada = date.format(new Date(fecha), patternHora);
+    let [terapeuta] = resultados;
+    try {
+      console.log({ terapeuta });
+      let horario = await Horario.query().where(
+        "id_terapeuta",
+        "=",
+        terapeuta.terapeuta.id
+      );
+      let horario_seleccionado = await checkDentroHorario(
+        horario,
+        fechaSolicitada
+      );
+      await checkFechaPosterior(fecha);
+      let citas = await Cita.query()
+        .withGraphJoined("paciente_datos.[usuario]")
+        .where("id_terapeuta", "=", terapeuta.terapeuta.id)
+        .modify((builder) => {
+          let fechaInicio = date.parse(fechaSolicitada, patternFecha);
+          let fechaLimite = date.addDays(fechaInicio, 1);
+          let fecha1 = date.format(fechaInicio, patternFecha);
+          let fecha2 = date.format(fechaLimite, patternFecha);
+          builder
+            .andWhere("fecha", ">=", fecha1)
+            .andWhere("fecha", "<", fecha2);
+        })
+        .modifyGraph("paciente_datos.usuario", (builder) => {
+          builder.select("nombre", "foto_perfil");
+        })
+        .orderBy("fecha", "DESC");
+      await checkCitasDisponibles(horario_seleccionado, citas);
+      let horarios_disponibles = obtenerHorariosDisponibles(
+        horario_seleccionado,
+        citas,
+        fechaSolicitada
+      );
+      let fechaParseada = date.parse(fecha,patternFechaCompleta);
+      console.log({ x: date.parse(fecha, patternFechaCompleta) });
+      let f = horarios_disponibles.find(
+        ({ fecha: fecha_dia }) =>
+          date.format(fecha_dia,patternFechaCompleta) == date.format(fechaParseada, patternFechaCompleta)
+      );
+      return res.status(200).json({ found: f || null, horarios_disponibles });
+    } catch (err) {
+      // if (err.razon) {
+      //   let diasDisponibles = await buscarFechasDisponibles(
+      //     id_terapeuta,
+      //     horario,
+      //     fecha
+      //   );
+      //   return res.status(420).json(diasDisponibles);
+      // }
+      console.log(err);
+    }
+    return res.status(200).json(null);
   } catch (err) {
     console.log(err);
     res.status(500).json("Algo ha salido mal");

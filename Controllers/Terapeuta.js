@@ -127,12 +127,10 @@ exports.buscarTerapeutas = async (req, res, next) => {
       })
 
       // .avg("terapeuta:resenas.id_terapeuta")
-      .debug();
-
-    return res.json({
-      count: usuarios.length,
-      resultados: usuarios,
-    });
+      // .debug();
+    res.count = usuarios.length;
+    res.resultados = usuarios;
+    next()
   } catch (err) {
     res.status(500).json("Algo ha salido mal");
   }

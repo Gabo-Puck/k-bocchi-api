@@ -8,12 +8,14 @@ const {
   obtenerCitasFechasExcluyente,
   verAgenda,
   notificarCita,
+  obtenerCitasPorFecha,
 } = require("../Controllers/Citas");
 const express = require("express");
 const { verHorario } = require("../Controllers/Horario");
 const {
   existeTerapeuta,
   verTerapeutaDetalles,
+  buscarTerapeutas,
 } = require("../Controllers/Terapeuta");
 const {
   obtenerHorariosDisponibles,
@@ -37,6 +39,89 @@ const { calcularDistancia } = require("../utils/geo");
 const Cita = require("../Models/Cita");
 var router = express.Router();
 
+
+/**
+ * @swagger
+ * /citas/emergencia:
+ *  get:
+ *    summary: Permite obtener citas disponibles en base a un criterio
+ *    tags: [Citas]
+ *    responses:
+ *      "200":
+ *        description: Devuelve un arreglo con las citas posibles junto con sus terapeutas
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                count:
+ *                  type: number
+ *                resultados:
+ *                  type: Array
+ *                  $ref: '#/components/schemas/Usuario'
+ *      "404":
+ *        description: Devuelve un mensaje indicando que no se encontraron fisioterapeutas con esas caracteristicas
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              $ref: '#/components/schemas/Usuario'
+ *    parameters:
+ *        - in: query
+ *          description: Filtro para nombre
+ *          name: nombre
+ *          schema:
+ *            type: string
+ *        - in: query
+ *          name: servicio_domicilio
+ *          description: Filtro para terapeutas con servicio a domicilio
+ *          schema:
+ *            type: boolean
+ *        - in: query
+ *          name: pago_minimo
+ *          description: Filtro para terapeutas a partir de un pago minimo
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: pago_maximo
+ *          description: Filtro para terapeutas a partir de un pago maximo
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: estrellas
+ *          description: Filtro para terapeutas a partir de una cierta cantidad de promedio de estrellas
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: lat
+ *          description: Filtro para la ubicacion, indica la latitud (son necesarios ambos para la distancia, lat y lng)
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: lng
+ *          description: Filtro para la ubicacion, indica la longitud (son necesarios ambos para la distancia, lat y lng)
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: distancia
+ *          description: Filtro para la ubicacion, indica la distancia máxima (son necesarios ambos para la distancia, lat y lng)
+ *          schema:
+ *            type: number
+ *        - in: query
+ *          name: con_consultorio
+ *          description: filtro para terapeutas con consultorio
+ *          schema:
+ *            type: boolean
+ *        - in: query
+ *          name: fecha
+ *          description: filtro para obtener la cita en determinada fecha
+ *          schema:
+ *            type: string
+ *
+ *
+ *
+ */
+router.get("/emergencia", buscarTerapeutas, obtenerCitasPorFecha);
 /**
  * @swagger
  * components:
