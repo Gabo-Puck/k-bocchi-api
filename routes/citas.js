@@ -5,7 +5,6 @@ const {
   verCita,
   verTodasCitas,
   verCitasTerapeuta,
-  obtenerCitasFechasExcluyente,
   verAgenda,
   notificarCita,
   obtenerCitasPorFecha,
@@ -24,6 +23,7 @@ const {
   buscarFechasDisponibles,
   checkFechaPosterior,
   checkHorarioDisponible,
+  checkFechaHoraPosterior,
 } = require("../Controllers/AlgoritmoCitas");
 const date = require("date-and-time");
 const {
@@ -37,8 +37,10 @@ const {
 const Terapeuta = require("../Models/Terapeuta");
 const { calcularDistancia } = require("../utils/geo");
 const Cita = require("../Models/Cita");
+const {
+  obtenerCitasFechasExcluyente,
+} = require("../utils/algoritmo_cita/excluirFecha");
 var router = express.Router();
-
 
 /**
  * @swagger
@@ -121,7 +123,22 @@ var router = express.Router();
  *
  *
  */
-router.get("/emergencia", buscarTerapeutas, obtenerCitasPorFecha);
+router.get(
+  "/emergencia",
+  async (req, res, next) => {
+    try {
+      let { fecha } = req.query;
+      //Primero revisamos si la fecha y hora solicitadas no son anteriores a la fecha y hora actual
+      await checkFechaHoraPosterior(fecha);
+      next();
+    } catch (error) {
+      if (error.razon) return res.status(400).json(error.razon);
+      return res.status(500).json("Algo ha salido mal");
+    }
+  },
+  buscarTerapeutas,
+  obtenerCitasPorFecha
+);
 /**
  * @swagger
  * components:
@@ -320,7 +337,6 @@ router.get("/notificar", notificarCita);
  *        required: true
  */
 router.get("/:id", verCita);
-
 
 /**
  * @swagger
@@ -638,14 +654,10 @@ router.get(
  *          type: integer
  *
  */
-router.get(
-  "/agenda/:id_terapeuta",
-  verAgenda,
-  (req, res, next) => {
-    console.log(res.body);
-    res.status(200).json(res.body);
-  }
-);
+router.get("/agenda/:id_terapeuta", verAgenda, (req, res, next) => {
+  console.log(res.body);
+  res.status(200).json(res.body);
+});
 
 /**
  * @swagger

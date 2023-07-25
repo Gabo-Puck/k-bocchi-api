@@ -1,13 +1,16 @@
 const { getDiaFromFecha } = require("../utils/algoritmo_cita/getDiaFromFecha");
 const date = require("date-and-time");
-const { obtenerCitasFechasExcluyente } = require("./Citas");
 const {
   obtenerFechaActualMexico,
   patternFecha,
   obtenerFechaComponent,
   patternHora,
   patternFechaCompleta,
+  obtenerFechaHoraComponent,
 } = require("../utils/fechas");
+const {
+  obtenerCitasFechasExcluyente,
+} = require("../utils/algoritmo_cita/excluirFecha");
 
 const duracionCita = 60; //minutos
 /**
@@ -71,6 +74,18 @@ const checkFechaPosterior = (fecha) => {
     }
   });
 };
+const checkFechaHoraPosterior = (fecha) => {
+  return new Promise((resolve, reject) => {
+    if (
+      date.parse(fecha, patternFechaCompleta) <=
+      date.parse(obtenerFechaHoraComponent(), patternFechaCompleta)
+    ) {
+      reject({ razon: "La fecha o la hora ingresada es anterior a hoy" });
+    } else {
+      resolve("Fecha posterior");
+    }
+  });
+};
 
 async function call() {
   let fecha = "2023-06-05";
@@ -93,7 +108,9 @@ function calcularCitasPosibles(hF, hI) {
    * Mediante la función "substract" de la librería date-and-time se obtiene la diferencia entre dos fechas,
    *  y mediante la función "toMinutes" se obtienen los minutos de diferencia, al dividir entre la duración
    * de una cita podemos obtener cuantas citas son posibles de agendar en un determinado rango de tiempo*/
-  return Math.floor(Math.floor(date.subtract(hF, hI).toMinutes()) / duracionCita);
+  return Math.floor(
+    Math.floor(date.subtract(hF, hI).toMinutes()) / duracionCita
+  );
 }
 
 /**
@@ -182,7 +199,12 @@ function checkHorarioDisponible(citas, fecha_horario) {
   return cintaEncontrada;
 }
 
-async function buscarFechasDisponibles(id_terapeuta, horario, fecha, hora=null) {
+async function buscarFechasDisponibles(
+  id_terapeuta,
+  horario,
+  fecha,
+  hora = null
+) {
   let citas_excluidas = await obtenerCitasFechasExcluyente(id_terapeuta, fecha);
   console.log({ citas_excluidas });
   fecha = date.parse(fecha, patternFecha);
@@ -209,7 +231,7 @@ async function buscarFechasDisponibles(id_terapeuta, horario, fecha, hora=null) 
     try {
       horario_seleccionado = await checkDentroHorario(horario, fecha_anterior);
       await checkCitasDisponibles(horario_seleccionado, citas);
-      if(hora!==null&&checkHorarioDisponible(citas,hora)){
+      if (hora !== null && checkHorarioDisponible(citas, hora)) {
         throw new Error("Horario ocupado este día");
       }
       console.log(`${fecha_anterior} aplica como día disponible`);
@@ -239,7 +261,7 @@ async function buscarFechasDisponibles(id_terapeuta, horario, fecha, hora=null) 
       //   citas,
       //   fecha_anterior
       // );
-      if(hora!==null&&checkHorarioDisponible(citas,hora)){
+      if (hora !== null && checkHorarioDisponible(citas, hora)) {
         throw new Error("Horario ocupado este día");
       }
       console.log(`${fecha_siguiente} aplica como día disponible`);
@@ -259,5 +281,6 @@ module.exports = {
   obtenerHorariosDisponibles,
   buscarFechasDisponibles,
   checkFechaPosterior,
-  checkHorarioDisponible
+  checkHorarioDisponible,
+  checkFechaHoraPosterior,
 };

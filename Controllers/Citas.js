@@ -17,6 +17,7 @@ const {
   checkFechaPosterior,
   checkCitasDisponibles,
   obtenerHorariosDisponibles,
+  checkFechaHoraPosterior,
 } = require("./AlgoritmoCitas");
 const Horario = require("../Models/Horario");
 
@@ -45,64 +46,85 @@ exports.obtenerCitasPorFecha = async (req, res, next) => {
       return res.status(400).json("La fecha esta en un formato incorrecto");
     }
     let fechaSolicitada = date.format(new Date(fecha), patternFecha);
-    let horaSolicitada = date.format(new Date(fecha), patternHora);
-    let [terapeuta] = resultados;
+    // let [terapeuta] = resultados;
+    let citas_posibles = [];
     try {
-      console.log({ terapeuta });
-      let horario = await Horario.query().where(
-        "id_terapeuta",
-        "=",
-        terapeuta.terapeuta.id
-      );
-      let horario_seleccionado = await checkDentroHorario(
-        horario,
-        fechaSolicitada
-      );
-      await checkFechaPosterior(fecha);
-      let citas = await Cita.query()
-        .withGraphJoined("paciente_datos.[usuario]")
-        .where("id_terapeuta", "=", terapeuta.terapeuta.id)
-        .modify((builder) => {
-          let fechaInicio = date.parse(fechaSolicitada, patternFecha);
-          let fechaLimite = date.addDays(fechaInicio, 1);
-          let fecha1 = date.format(fechaInicio, patternFecha);
-          let fecha2 = date.format(fechaLimite, patternFecha);
-          builder
-            .andWhere("fecha", ">=", fecha1)
-            .andWhere("fecha", "<", fecha2);
-        })
-        .modifyGraph("paciente_datos.usuario", (builder) => {
-          builder.select("nombre", "foto_perfil");
-        })
-        .orderBy("fecha", "DESC");
-      await checkCitasDisponibles(horario_seleccionado, citas);
-      let horarios_disponibles = obtenerHorariosDisponibles(
-        horario_seleccionado,
-        citas,
-        fechaSolicitada
-      );
-      let fechaParseada = date.parse(fecha,patternFechaCompleta);
-      console.log({ x: date.parse(fecha, patternFechaCompleta) });
-      let f = horarios_disponibles.find(
-        ({ fecha: fecha_dia }) =>
-          date.format(fecha_dia,patternFechaCompleta) == date.format(fechaParseada, patternFechaCompleta)
-      );
-      return res.status(200).json({ found: f || null, horarios_disponibles });
+      /**
+       * Iteramos sobre todos los terapeutas obtenidos de la busqueda
+       * y los filtramos por los que tengan disponibilidad en la hora y día requerido
+       */
+      
+      for (const terapeuta of resultados) {
+        //obtenemos el horario del terapeuta
+        try {
+          let horario = await Horario.query().where(
+            "id_terapeuta",
+            "=",
+            terapeuta.terapeuta.id
+          );
+          //Revisamos si la fecha solicitada es un día hábil del terapeuta y si es así, guardamos el día
+          //Hay que recordar que horario contiene la hora de inicio y fin del día hábil del terapeuta
+          let horario_seleccionado = await checkDentroHorario(
+            horario,
+            fechaSolicitada
+          );
+
+          //Una vez pasadas las pruebas anteriores obtenemos las citas del día solicitado por el usuario
+          let citas = await Cita.query()
+            .withGraphJoined("paciente_datos.[usuario]")
+            .where("id_terapeuta", "=", terapeuta.terapeuta.id)
+            .modify((builder) => {
+              let fechaInicio = date.parse(fechaSolicitada, patternFecha);
+              let fechaLimite = date.addDays(fechaInicio, 1);
+              let fecha1 = date.format(fechaInicio, patternFecha);
+              let fecha2 = date.format(fechaLimite, patternFecha);
+              builder
+                .andWhere("fecha", ">=", fecha1)
+                .andWhere("fecha", "<", fecha2);
+            })
+            .modifyGraph("paciente_datos.usuario", (builder) => {
+              builder.select("nombre", "foto_perfil");
+            })
+            .orderBy("fecha", "DESC");
+          //Checamos si hay citas disponibles ese día mediante el horario
+          await checkCitasDisponibles(horario_seleccionado, citas);
+          //Una vez pasado la prueba anterior, obtenemos los horarios que están disponibles en la fecha solicitada
+          let horarios_disponibles = obtenerHorariosDisponibles(
+            horario_seleccionado,
+            citas,
+            fechaSolicitada
+          );
+          //Una vez obtenido los horarios_disponibles, parseamos a un objeto Date el string fecha
+          let fechaParseada = date.parse(fecha, patternFechaCompleta);
+          //Posteriormente revisamos si alguno de los horarios disponibles concuerda con la hora ingresada por el usuario
+          let cita_disponible = horarios_disponibles.find(
+            ({ fecha: fecha_dia }) =>
+              date.format(fecha_dia, patternFechaCompleta) ==
+              date.format(fechaParseada, patternFechaCompleta)
+          );
+          //Si es así, lo agregamos a "citas_disponibles"
+          if (cita_disponible)
+            citas_posibles.push({
+              terapeuta,
+              cita_disponible,
+            });
+        } catch (error) {
+          if (error.razon) {
+            console.log(error);
+          } else {
+            throw error;
+          }
+        }
+      }
+      return res.status(200).json(citas_posibles);
     } catch (err) {
-      // if (err.razon) {
-      //   let diasDisponibles = await buscarFechasDisponibles(
-      //     id_terapeuta,
-      //     horario,
-      //     fecha
-      //   );
-      //   return res.status(420).json(diasDisponibles);
-      // }
       console.log(err);
+      return res.status(500).json("Algo ha salido mal");
     }
-    return res.status(200).json(null);
   } catch (err) {
     console.log(err);
-    res.status(500).json("Algo ha salido mal");
+    if (err.razon) return res.status(500).json(err.razon);
+    return res.status(500).json("Algo ha salido mal");
   }
 };
 
@@ -191,38 +213,6 @@ exports.verTodasCitas = async (req, res, next) => {
   } catch (err) {
     console.log(err);
     return res.status(500).json("Algo ha salido mal");
-  }
-};
-
-exports.obtenerCitasFechasExcluyente = async (id_terapeuta, fecha) => {
-  try {
-    let citas = await Cita.query()
-      .where("id_terapeuta", "=", id_terapeuta)
-      .modify((builder) => {
-        let fechaInicio = date.parse(fecha, patternFecha);
-        if (fecha && !isNaN(fechaInicio)) {
-          let fechaLimite = date.addDays(fechaInicio, 1);
-          let fechaInicioFormateada = date.format(fechaInicio, patternFecha);
-          let FechaFinalFormateada = date.format(fechaLimite, patternFecha);
-          let fechaActual = date.addDays(obtenerFechaActualMexico(), 1);
-          let fechaActualFormateada = date.format(
-            fechaActual,
-            patternFecha,
-            true
-          );
-          // console.log(new Date(Date.now()).toLocaleString());
-          builder
-            .andWhere("fecha", ">=", fechaActualFormateada)
-            .andWhere("fecha", "<", fechaInicioFormateada)
-            .orWhere("fecha", ">=", FechaFinalFormateada);
-        }
-      })
-      .orderBy("fecha", "DESC")
-      .debug();
-    return citas;
-  } catch (err) {
-    console.log(err);
-    throw new Error(err);
   }
 };
 
