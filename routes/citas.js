@@ -5,9 +5,10 @@ const {
   verCita,
   verTodasCitas,
   verCitasTerapeuta,
-  verAgenda,
+  verAgendaTerapeuta,
   notificarCita,
   obtenerCitasPorFecha,
+  verAgendaPaciente,
 } = require("../Controllers/Citas");
 const express = require("express");
 const { verHorario } = require("../Controllers/Horario");
@@ -132,6 +133,7 @@ router.get(
       await checkFechaHoraPosterior(fecha);
       next();
     } catch (error) {
+      console.log(error);
       if (error.razon) return res.status(400).json(error.razon);
       return res.status(500).json("Algo ha salido mal");
     }
@@ -654,7 +656,48 @@ router.get(
  *          type: integer
  *
  */
-router.get("/agenda/:id_terapeuta", verAgenda, (req, res, next) => {
+router.get("/agenda/:id_terapeuta", verAgendaTerapeuta, (req, res, next) => {
+  console.log(res.body);
+  res.status(200).json(res.body);
+});
+/**
+ * @swagger
+ * /citas/agendaPaciente/{id_paciente}:
+ *  get:
+ *    summary: Permite obtener las citas de un pacinete
+ *    description: Permite obtener todas las citas del paciente a partir del día de hoy
+ *    tags: [Citas]
+ *    responses:
+ *      "200":
+ *        description: Devuelve las citas de un paciente
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                  type: object
+ *                  $ref: '#/components/schemas/Cita'
+ *      "404":
+ *        description: Devuelve un mensaje indicando que no existe el paciente
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: string
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *    parameters:
+ *      - in: path
+ *        name: id_paciente
+ *        required: true
+ *        schema:
+ *          type: integer
+ *
+ */
+router.get("/agendaPaciente/:id_paciente", verAgendaPaciente, (req, res, next) => {
   console.log(res.body);
   res.status(200).json(res.body);
 });
