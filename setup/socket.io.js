@@ -86,7 +86,7 @@ function initServer(httpServer) {
       let { foto_perfil } = await Usuario.query().findById(socket.data.id);
       generarNotificacion({
         contexto_movil: "chat",
-        contexto_web: "app/chat",
+        contexto_web: "/app/chat",
         descripcion: `${socket.data.nombre} dice: ${contenido}`,
         titulo: "Nuevo mensaje",
         id_usuario: id_to,

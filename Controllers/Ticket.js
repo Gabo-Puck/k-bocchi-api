@@ -84,7 +84,7 @@ exports.crearTicket = async (req, res, next) => {
       titulo: `¡Gracias por comprar en K-Bocchi!`,
       descripcion:
         "Revisa el apartado de pedidos para mantenerte al tanto de tu envio",
-      contexto_web: "/app/marketplace/paciente/catalogo",
+      contexto_web: "/app/marketplace/envios/paciente",
     });
   } catch (err) {
     console.log(obtenerFechaActualMexico(), ":", err);

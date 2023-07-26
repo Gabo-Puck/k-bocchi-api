@@ -3,6 +3,7 @@ const Nota = require("../Models/Nota");
 const Paciente = require("../Models/Paciente");
 const Terapeuta = require("../Models/Terapeuta");
 const { obtenerFechaComponent } = require("../utils/fechas");
+const { generarNotificacion } = require("../utils/notificaciones");
 
 exports.verNotas = async (req, res, next) => {
   try {
@@ -90,23 +91,57 @@ exports.compartirNotas = async (req, res, next) => {
   try {
     let {
       id: id_paciente,
-      terapeutas: [{ id: id_terapeuta }],
+      terapeutas: [{ id: id_terapeuta, notas_compartidas }],
     } = grafo;
+    let terapeutas_notificar = {};
+    let notificaciones = [];
     let paciente = await Paciente.query()
       .findById(id_paciente)
-      .joinRelated("terapeutas")
+      .withGraphJoined("[terapeutas,usuario]")
       .where("terapeutas.id", "=", id_terapeuta);
     if (!paciente) {
       return res
         .status(403)
         .json("Este paciente no tiene relación con dicho terapeuta");
     }
+    let terapeutas_notas = await Nota.query()
+      .withGraphJoined("cita_nota.[terapeuta_datos]")
+      .whereIn(
+        "notas.id",
+        notas_compartidas.map(({ id }) => id)
+      );
+    terapeutas_notas.forEach(({ cita_nota: { terapeuta_datos } }) => {
+      if (terapeutas_notificar[terapeuta_datos.id_usuario]) {
+        terapeutas_notificar[terapeuta_datos.id_usuario] += 1;
+      } else {
+        terapeutas_notificar[terapeuta_datos.id_usuario] = 1;
+      }
+    });
+    for (const id_usuario in terapeutas_notificar) {
+      if (Object.hasOwnProperty.call(terapeutas_notificar, id_usuario)) {
+        const element = terapeutas_notificar[id_usuario];
+        notificaciones.push({
+          id_usuario,
+          descripcion: `${paciente.usuario.nombre} ha compartido ${element} notas tuyas`,
+          contexto_web: "/app/terapeuta/bitacora",
+          titulo: "Notas compartidas",
+        });
+      }
+    }
+
     let resultado = await Paciente.query().upsertGraphAndFetch(grafo, {
-      noDelete: ["terapeutas","terapeutas.notas_compartidas"],
-      unrelate:["terapeutas.notas_compartidas"],
+      noDelete: ["terapeutas", "terapeutas.notas_compartidas"],
+      unrelate: ["terapeutas.notas_compartidas"],
       noUnrelate: ["terapeutas"],
       relate: ["terapeutas.notas_compartidas"],
     });
+    for (const notificacion of notificaciones) {
+      try {
+        await generarNotificacion({...notificacion});
+      } catch (error) {
+        console.log(error);
+      }
+    }
     return res.status(200).json(resultado);
   } catch (error) {
     console.log(error);
@@ -277,6 +312,6 @@ function agruparPorFechas(notas) {
     }
     fechas[fecha].push(nota);
   });
-  fechas = Object.keys(fechas).map((f)=>({header:f,notas:fechas[f]}))
+  fechas = Object.keys(fechas).map((f) => ({ header: f, notas: fechas[f] }));
   return fechas;
 }

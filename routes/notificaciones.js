@@ -6,6 +6,8 @@ const {
   eliminarNotificacion,
   editarNotificacion,
   verNotificacionesUsuario,
+  eliminarTodasNotificaciones,
+  marcarComoLeidas,
 } = require("../Controllers/Notificaciones");
 var router = express.Router();
 
@@ -131,6 +133,58 @@ router.post("/", crearNotificacion);
  *               type: string
  */
 router.delete("/", eliminarNotificacion);
+/**
+ * @swagger
+ * /notificaciones/todas/{id_usuario}:
+ *  delete:
+ *    summary: Permite eliminar todas las notificaciones de un usuario en el sistema
+ *    tags: [Notificaciones]
+ *    responses:
+ *      "201":
+ *        description: Devuelve 1 como caso exitoso
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: integer
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *    parameters:
+ *      - in: path
+ *        name: id_usuario
+ *        type: string
+ *        required: true
+ */
+router.delete("/todas/:id_usuario", eliminarTodasNotificaciones);
+/**
+ * @swagger
+ * /notificaciones/todas/{id_usuario}:
+ *  patch:
+ *    summary: Permite marcar todas las notificaciones de un usuario como leidas en el sistema
+ *    tags: [Notificaciones]
+ *    responses:
+ *      "201":
+ *        description: Devuelve 1 como caso exitoso
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: integer
+ *      "500":
+ *         description: Devuelve un mensaje indicando que algo salió mal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *    parameters:
+ *      - in: path
+ *        name: id_usuario
+ *        type: string
+ *        required: true
+ */
+router.patch("/todas/:id_usuario", marcarComoLeidas);
 /**
  * @swagger
  * /notificaciones:
