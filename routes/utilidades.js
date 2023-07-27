@@ -135,20 +135,32 @@ router.post("/desencriptar", (req, res, next) => {
  *                type: string
  */
 router.post("/validarCedula", async (req, res, next) => {
+  //De body se obtiene cedula, que es el numero de cedula solicitada.
   let { cedula } = req.body;
   console.log(cedula);
+  //si cedula es undefined retornamos un status 400;
   if (!cedula) return res.status(400).json("La cedula no puede estar vacía");
+  //si cedula contiene otra cosa que no sea sea numeros, se regresa un 400
+  //cualquier objeto que tenga diagonlaes así: / / es una expresion regular
+  //las expresiones regulares permiten encontrar patrones en strings
+  //En este caso mediante el método test de la expresión regular se revisa
+  //si cedula sigue el patron definido
   if (!/^\d+$/.test(cedula))
     return res.status(400).json("La cedula solo debe de contener numeros");
+  //Si tiene menos 7 o mas 8 caracteres también retornamos un 400
   if (cedula.length < 7 || cedula.length > 8)
     return res
       .status(400)
       .json("La cedula tiene que tener entre 7 u 8 caracteres");
+  //Se obtiene los datos de la cedula ingresada mediante la función scrapCedula
   let scrapResult = await scrapCedula(cedula);
+  //Si scrapResult contiene un error, se retorna un status 500 con el error
   if (scrapResult.error) return res.status(500).json(scrapResult.error);
+  //Si contiene un mensaje, retorna un 404
   if (scrapResult.mensaje) {
     return res.status(404).json(scrapResult.mensaje);
   }
+  //Si todo salio bien, retorna un 200 con los datos de la cedula ingresada
   return res.status(200).json(scrapResult);
 });
 
@@ -202,22 +214,28 @@ router.post("/validarCedula", async (req, res, next) => {
 router.post("/validarCedulaOCR", async (req, res, next) => {
   let imagenCedula;
   console.log(req.body);
+  //Aquí, primero se revisa que haya un archivo (files) en la petición del usuario
   if (!req.files || Object.keys(req.files).length === 0) {
     return res.status(400).send("No se subió ninguna imagen");
   }
+  //También se revisa si no hay nombre o numero de cedula
   if (!req.body.nombre)
     return res.status(400).json("El nombre completo es obligatorio");
   if (!req.body.numeroCedula)
     return res.status(400).json("El numero de la cedula es obligatorio");
   let nombre = req.body.nombre;
   let cedula = req.body.numeroCedula;
+  //la imagen se recibe como buffer, un buffer es un arreglo de bytes
   let buffer = req.files.imagenCedula;
   try {
+    //Ejecutamos la función para validar el numero de cedula
     let result = await validarCedulaOCR(nombre, cedula, buffer.data);
+    //Si la cedula es valida se le notifica al cliente
     if (result.isValida)
       return res
         .status(200)
         .json("La información provista concuerda con la cedula de la imagen");
+    //Si no, se regresa un status 422 con la razon de porque es invalida
     return res.status(422).json(result.mensaje);
   } catch (err) {
     console.log(err);

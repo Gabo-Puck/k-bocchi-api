@@ -212,12 +212,18 @@ router.post("/datos/log", async (req, res, next) => {
  */
 router.post("/datos/email", async (req, res, next) => {
   console.log(req.body);
+  //Mediante el modelo de Usuario, se realiza una query para revisar si el email solicitado ya existe
   let usuario = await Usuario.query().findOne({ email: req.body.email });
+  //Si así es, se retorna un 400
   if (usuario)
     return res.status(400).json("Este correo ya se encuentra registrado");
   return res.status(200).json("ok");
 });
 
+/**
+ * Como nota. Todos los comentarios que empiezan con @swagger, son los que se encargan de generar
+ * la documentación que se puede ver en la api.
+ * */
 /**
  * @swagger
  * /usuarios/registrar:
@@ -233,12 +239,70 @@ router.post("/datos/email", async (req, res, next) => {
  *            $ref: '#/components/schemas/Usuario'
  */
 router.post("/registrar", async (req, res, next) => {
-  console.log(req.body);
+  /**
+   * Para realizar la api se utilizo un framework llamado "express"
+   * Los dos conceptos más importantes que hay que entender son dos:
+   *  - Middleware: Middleware es una función que se ejecuta en cadena
+   *                donde si una sola de las funciones de la cadena falla
+   *                se corta el flujo y se acaba el proceso
+   *
+   *  - Router: Es un objeto del framework "express" que permite vincular
+   *            una ruta (en este caso "/usuarios/registrar") con una serie
+   *            de funciones middleware.
+   * Las rutas definidas en los router reciben peticiones http de los clientes, y ejecutan
+   * las funciones middleware
+   *
+   * Ahora, las funciones middleware en express tienen 3 parametros:
+   *  req: Es un objeto que representa la petición del cliente. Aquí se suele
+   *       tener los datos que el usuario mando, como lo es el body de la petición,
+   *       los parametros que mando etc.
+   *  res: Es un objeto que representa lo que se le va a regresar como respuesta al usuario.
+   *       Las funciones más importantes de res son:
+   *          status: Permite definir un código de status que devuelve la petición. Estos códigos
+   *                  son un estándar web. En pocas palabras permiten saber si una petición se resolvio
+   *                  correctamente, si fallo por un problema en el servidor, o un problema en los datos
+   *                  que envío el cliente etc. https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
+   *          json: Esta función permite serializar un objeto en json y devolverlo al cliente como respuesta
+   *  next: Es una función que permite llamar a la siguiente función middleware en la cadena
+   */
   try {
+    //Primero revisamos si el body que mando el cliente contiene una id.
+    /**
+     * Si no lo contiene lo generemos mediante la función uuidv4. Esta función permite
+     * generar codigos únicos
+     */
     if (!req.body.id) req.body.id = uuidv4();
+    /**
+     * Estas cosas se revisan, porque:
+     *  - En la base de datos del sistema, los usuarios registrados con google no guardan
+     *    su contraseña, porque de eso se encarga los servicios de autenticación de google.
+     *  - Al registrarse con google, google ya genera un id de autenticación por lo tanto,
+     *    no hay necesidad de generar otro si ya esta generado.
+     * El flujo que sigue es algo así:
+     *    Usuario le da a continuar con google
+     *                    |
+     *                    v
+     *    Google crea la cuenta en firebase auth
+     *                    |
+     *                    v
+     *    El usuario sigue con el proceso de registro
+     *      en la página, considerando que la página
+     *    guarda su id de manera local para luego mandarla
+     *                a esta ruta
+     *
+     * Para los usuarios que se registran sin google el flujo es el mismo, solo omitiendo la parte
+     * de google y la id de google
+     */
+
+    /**
+     * Ahora también revisamos si el body contiene una contraseña, si la tiene la encriptamos
+     * antes de meterla en la base de datos
+     */
     if (req.body.contrasena)
       req.body.contrasena = encriptar(req.body.contrasena);
+    //Una vez encriptada, creamos el usuario en la base de datos
     await Usuario.crearUsuarioBaseDatos(req.body);
+    //Y si todo sale bien, regresamos un status 200
     return res.status(200).json("ok");
   } catch (error) {
     return res

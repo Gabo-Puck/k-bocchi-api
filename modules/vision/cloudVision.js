@@ -50,16 +50,19 @@ function saveResults(result, folder) {
   }
 }
 
+//Para la validación de cedulas se uso Google OCR, que es un sistema de detección de texto en imagenes
 async function validarCedulaOCR(nombre, cedula, buffer) {
-    // let { text } = JSON.parse(
-    //   fs.readFileSync("testVision/results/1685041364234-test-11.json", "utf8")
-    // );
+
   try {
+    //El buffer, es decir la imagen se le pasa a la función getTextFromImage de google OCR, y se obtiene la propiedad text
     let { text } = await getTextFromImage(buffer);
+    //Se "sanitiza" text, quitandole todos los saltos de linea
     let textEscapped = text.replace(/(\r\n|\n|\r)/gm, " ");
     console.log("ESCPAED: ", textEscapped);
+    //Posteriormente se crea una expresión regular para buscar el nombre y la cedula en los strings
     let nombreRegex = new RegExp(" " + nombre.toUpperCase().trim() + " ", "gm");
     let cedulaRegex = new RegExp(" " + cedula.trim() + " ", "gm");
+    //Mediante el método test se revisa si el texto de la imagen contenga el nombre, cedula solicitados, así como la palabra FISIOTERAPEUTA
     if (!nombreRegex.test(textEscapped))
       return {
         isValida: false,
@@ -80,6 +83,7 @@ async function validarCedulaOCR(nombre, cedula, buffer) {
     console.log("Nombre:", nombreRegex.test(textEscapped));
     console.log("Cedula:", cedulaRegex.test(textEscapped));
     console.log("Fisioterapia:", /FISIOTERAPIA/.test(textEscapped));
+    //Si todo es valido, se retorna una respuesta positiva
     return {
       isValida: true,
     };
@@ -88,9 +92,6 @@ async function validarCedulaOCR(nombre, cedula, buffer) {
     return { isValida: false, mensaje: "ERROR" };
   }
 }
-// validateCedula("Veronica Berumen Avila", "6091402");
-// const img = fs.readFileSync("prueba.jpeg");
-// validateCedula("Veronica Berumen Avila","6091402",img);
 module.exports = {
   validarCedulaOCR,
 };
